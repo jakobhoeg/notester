@@ -52,7 +52,7 @@ import { Input } from "./ui/input";
 
 export function LeftSidebar() {
   const pathname = usePathname();
-  const { notes, isLoading, addNote } = useNotes()
+  const { notes, isLoading, addNote, deleteNote } = useNotes()
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const router = useRouter();
@@ -269,17 +269,11 @@ export function LeftSidebar() {
                                       </DropdownMenuItem>
                                       <DropdownMenuSeparator />
                                       <DropdownMenuItem
-                                        // onClick={() => {
-                                        //   openDeleteDialog(doc.id, doc.name);
-                                        // }}
-                                        // disabled={isDeleting}
+                                        onClick={() => {
+                                          deleteNote(note.id);
+                                        }}
                                         className="flex cursor-pointer items-center gap-2"
                                       >
-                                        {/* {isDocBeingDeleted ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="h-4 w-4" />
-                                      )} */}
                                         <Trash2 className="h-4 w-4" />
                                         <span>Delete Document</span>
                                       </DropdownMenuItem>

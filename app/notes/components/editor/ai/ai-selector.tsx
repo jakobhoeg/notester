@@ -139,6 +139,18 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
               autoFocus
               placeholder={hasCompletion ? "Tell AI what to do next" : "Ask AI to edit or generate..."}
               onFocus={() => addAIHighlight(editor!)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && inputValue.trim()) {
+                  e.preventDefault();
+                  if (completion) {
+                    handleComplete(completion, "zap", inputValue).then(() => setInputValue(""));
+                  } else {
+                    const slice = editor!.state.selection.content();
+                    const text = editor!.storage.markdown.serializer.serialize(slice.content);
+                    handleComplete(text, "zap", inputValue).then(() => setInputValue(""));
+                  }
+                }
+              }}
             />
             <Button
               size="icon"
