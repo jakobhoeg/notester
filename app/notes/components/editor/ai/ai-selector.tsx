@@ -15,6 +15,7 @@ import AISelectorCommands from "./ai-selector-commands";
 import { Spinner } from "@/components/ui/spinner";
 import { streamText } from "ai";
 import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core";
+import { CONTINUE_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT, FIX_SYSTEM_PROMPT, IMPROVE_SYSTEM_PROMPT, LONGER_SYSTEM_PROMPT, SHORTER_SYSTEM_PROMPT, ZAP_SYSTEM_PROMPT } from "@/app/constants/prompts";
 //TODO: I think it makes more sense to create a custom Tiptap extension for this functionality https://tiptap.dev/docs/editor/ai/introduction
 
 interface AISelectorProps {
@@ -35,8 +36,6 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
       toast.error("Your browser does not support built-in AI.");
       return;
     }
-
-    console.log(prompt)
 
     const model = builtInAI();
     const availability = await model.availability();
@@ -63,57 +62,38 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
 
       switch (option) {
         case "continue":
-          systemPrompt = "You are an AI writing assistant that continues existing text based on context from prior text. " +
-            "Limit your response to no more than 200 characters, but make sure to construct complete sentences." +
-            "Only output the generation itself, with no introductions, explanations, or extra commentary." +
-            "Use Markdown formatting when appropriate.";
+          systemPrompt = CONTINUE_SYSTEM_PROMPT;
           userPrompt = prompt;
           break;
         case "improve":
-          systemPrompt = "You are an AI writing assistant that improves existing text. " +
-            "Limit your response to no more than 200 characters, but make sure to construct complete sentences." +
-            "Only output the generation itself, with no introductions, explanations, or extra commentary." +
-            "Use Markdown formatting when appropriate.";
+          systemPrompt = IMPROVE_SYSTEM_PROMPT;
           userPrompt = `The existing text is: ${prompt}`;
           break;
         case "shorter":
-          systemPrompt = "You are an AI writing assistant that shortens existing text. " +
-            "Only output the generation itself, with no introductions, explanations, or extra commentary." +
-            "Use Markdown formatting when appropriate.";
+          systemPrompt = SHORTER_SYSTEM_PROMPT;
           userPrompt = `The existing text is: ${prompt}`;
           break;
         case "longer":
-          systemPrompt = "You are an AI writing assistant that lengthens existing text. " +
-            "Only output the generation itself, with no introductions, explanations, or extra commentary." +
-            "Use Markdown formatting when appropriate.";
+          systemPrompt = LONGER_SYSTEM_PROMPT;
           userPrompt = `The existing text is: ${prompt}`;
           break;
         case "fix":
-          systemPrompt = "You are an AI writing assistant that fixes grammar and spelling errors in existing text. " +
-            "Limit your response to no more than 200 characters, but make sure to construct complete sentences." +
-            "Only output the generation itself, with no introductions, explanations, or extra commentary." +
-            "Use Markdown formatting when appropriate.";
+          systemPrompt = FIX_SYSTEM_PROMPT;
           userPrompt = `The existing text is: ${prompt}`;
           break;
         case "zap":
-          systemPrompt = "You are an AI writing assistant that generates text based on a prompt. " +
-            "You take an input from the user and a command for manipulating the text" +
-            "Only output the generation itself, with no introductions, explanations, or extra commentary." +
-            "Use Markdown formatting when appropriate.";
+          systemPrompt = ZAP_SYSTEM_PROMPT;
           userPrompt = `For this text: ${prompt}. You have to respect the command: ${command}`;
           break;
         default:
-          systemPrompt = "You are an AI writing assistant." +
-            "Only output the generation itself, with no introductions, explanations, or extra commentary.";
-          "If user asks to delete text, just return an empty string."
+          systemPrompt = DEFAULT_SYSTEM_PROMPT;
           userPrompt = prompt;
       }
 
-      const fullPrompt = `${systemPrompt}\n\nUser: ${userPrompt}\n\nAssistant:`;
-
-      const { textStream } = await streamText({
+      const { textStream } = streamText({
         model,
-        prompt: fullPrompt,
+        system: systemPrompt,
+        prompt: userPrompt,
       });
 
       let fullCompletion = "";

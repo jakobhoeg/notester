@@ -20,6 +20,7 @@ import {
   Twitter,
   Youtube,
 } from "novel";
+import { Heading } from "@tiptap/extension-heading";
 
 import { cx } from "class-variance-authority";
 import { common, createLowlight } from "lowlight";
@@ -94,6 +95,7 @@ const starterKit = StarterKit.configure({
       spellcheck: "false",
     },
   },
+  heading: false, // We'll configure this separately
   horizontalRule: false,
   dropcursor: {
     color: "#DBEAFE",
@@ -133,6 +135,53 @@ const mathematics = Mathematics.configure({
 
 const characterCount = CharacterCount.configure();
 
+const tiptapImage = TiptapImage.configure({
+  HTMLAttributes: {
+    class: cx("rounded-lg border border-muted max-w-full h-auto"),
+  },
+});
+
+const heading = Heading.configure({
+  HTMLAttributes: {
+    class: cx("font-semibold leading-tight mb-2"),
+  },
+  levels: [1, 2, 3, 4, 5, 6],
+}).extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      class: {
+        default: null,
+        rendered: false,
+      },
+    };
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    const level = node.attrs.level;
+    const sizeClasses = {
+      1: "text-2xl md:text-3xl",
+      2: "text-xl md:text-2xl",
+      3: "text-lg md:text-xl",
+      4: "text-base md:text-lg",
+      5: "text-sm md:text-base",
+      6: "text-xs md:text-sm"
+    };
+
+    return [
+      `h${level}`,
+      {
+        ...HTMLAttributes,
+        class: cx(
+          "font-semibold leading-tight mb-2",
+          sizeClasses[level as keyof typeof sizeClasses],
+          HTMLAttributes.class
+        ),
+      },
+      0,
+    ];
+  },
+});
+
 const markdownExtension = MarkdownExtension.configure({
   html: true,
   tightLists: true,
@@ -146,8 +195,10 @@ const markdownExtension = MarkdownExtension.configure({
 
 export const defaultExtensions = [
   starterKit,
+  heading,
   placeholder,
   tiptapLink,
+  tiptapImage,
   taskList,
   taskItem,
   horizontalRule,

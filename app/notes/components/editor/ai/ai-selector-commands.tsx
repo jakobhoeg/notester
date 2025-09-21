@@ -58,7 +58,15 @@ const AISelectorCommands = ({ onSelect }: AISelectorCommandsProps) => {
           onSelect={
             () => {
               const pos = editor!.state.selection.from;
-              const text = getPrevText(editor!, pos);
+              let text = getPrevText(editor!, pos);
+
+              // If getPrevText returns empty, try to get the full document text as context
+              if (!text || text.trim().length === 0) {
+                const doc = editor!.state.doc;
+                text = editor!.storage.markdown.serializer.serialize(doc);
+              }
+
+              console.log("Continue writing text:", text);
               onSelect(text, "continue");
             }
           }

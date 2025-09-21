@@ -95,6 +95,54 @@ export const suggestionItems = createSuggestionItems([
     command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCodeBlock().run(),
   },
   {
+    title: "Image",
+    description: "Insert an image from URL.",
+    searchTerms: ["image", "img", "picture", "photo"],
+    icon: <ImageIcon size={18} />,
+    command: ({ editor, range }) => {
+      const imageUrl = prompt("Please enter image URL");
+      if (imageUrl) {
+        // Basic URL validation
+        try {
+          new URL(imageUrl);
+          editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .setImage({ src: imageUrl })
+            .run();
+        } catch {
+          alert("Please enter a valid image URL");
+        }
+      }
+    },
+  },
+  {
+    title: "YouTube",
+    description: "Embed a YouTube video.",
+    searchTerms: ["youtube", "video", "embed"],
+    icon: <Youtube size={18} />,
+    command: ({ editor, range }) => {
+      const youtubeUrl = prompt("Please enter YouTube URL");
+      if (youtubeUrl) {
+        // YouTube URL validation
+        const youtubeRegex = /^https?:\/\/(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+        if (youtubeRegex.test(youtubeUrl)) {
+          editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .setYoutubeVideo({
+              src: youtubeUrl,
+            })
+            .run();
+        } else {
+          alert("Please enter a valid YouTube URL");
+        }
+      }
+    },
+  },
+  {
     title: "Twitter",
     description: "Embed a Tweet.",
     searchTerms: ["twitter", "embed"],

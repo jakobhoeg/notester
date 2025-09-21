@@ -40,11 +40,16 @@ const AICompletionCommands = ({
           className="gap-2 px-4"
           value="insert"
           onSelect={() => {
-            const selection = editor!.view.state.selection;
+            const state = editor!.state;
+            const selection = state.selection;
+            const docSize = state.doc.content.size;
+
+            const insertPos = Math.min(selection.to + 1, docSize);
+
             editor!
               .chain()
               .focus()
-              .insertContentAt(selection.to + 1, completion)
+              .insertContentAt(insertPos, completion)
               .run();
           }}
         >
