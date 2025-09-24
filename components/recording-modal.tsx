@@ -17,7 +17,7 @@ import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core";
 import { generateText } from "ai";
 import { AudioWaveform } from "./ui/audio-wave";
 import { Mic2, Pause, StopCircle, X } from "lucide-react";
-import { Spinner } from "./ui/spinner";
+import { Loader } from "./ai-elements/loader";
 
 interface RecordingModalProps {
   onClose: () => void;
@@ -167,7 +167,7 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
         {isProcessing ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
             <p className="text-gray-500 flex items-center">
-              <Spinner className="size-4 mr-1" />
+              <Loader className="size-4 mr-1" />
               {processingStatus}
               <span className="animate-pulse">...</span>
             </p>

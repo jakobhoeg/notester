@@ -12,10 +12,10 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import AICompletionCommands from "./ai-completion-command";
 import AISelectorCommands from "./ai-selector-commands";
-import { Spinner } from "@/components/ui/spinner";
 import { streamText } from "ai";
 import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core";
 import { CONTINUE_SYSTEM_PROMPT, DEFAULT_SYSTEM_PROMPT, FIX_SYSTEM_PROMPT, IMPROVE_SYSTEM_PROMPT, LONGER_SYSTEM_PROMPT, SHORTER_SYSTEM_PROMPT, ZAP_SYSTEM_PROMPT } from "@/app/constants/prompts";
+import { Loader } from "@/components/ai-elements/loader";
 //TODO: I think it makes more sense to create a custom Tiptap extension for this functionality https://tiptap.dev/docs/editor/ai/introduction
 
 interface AISelectorProps {
@@ -126,7 +126,7 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
           <Sparkles className="mr-2 h-4 w-4 shrink-0  " />
           AI is thinking
           <div className="ml-2 mt-1">
-            <Spinner className="size-4" />
+            <Loader className="size-4" />
           </div>
         </div>
       )}
