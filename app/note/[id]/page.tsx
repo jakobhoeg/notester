@@ -20,6 +20,7 @@ import NoteSkeleton from "@/components/note-skeleton"
 import { JSONContent } from "novel"
 import TailwindAdvancedEditor from "../components/editor/tailwind-editor"
 import { createEmptyContent } from "@/lib/utils"
+import SidebarAiChat from "../components/sidebar-ai-chat"
 
 const DELAY_SAVE = 1000
 
@@ -43,7 +44,7 @@ export default function NotePage() {
   const { updateNote, deleteNote, useNoteQuery } = useNotes()
   const params = useParams<{ id: string }>();
   const id = params.id as string;
-  const { data: note, isLoading } = useNoteQuery(id ?? "")
+  const { data: note, isLoading } = useNoteQuery(id)
   const { isDbReady } = useDbLoading()
 
   const [editableTitle, setEditableTitle] = useState("")
@@ -210,70 +211,80 @@ export default function NotePage() {
   }
 
   return (
-    <div className="flex flex-col h-full w-full min-h-0">
-      {/* Title Section - Fixed height */}
-      <div className="flex-shrink-0 p-4 flex items-center w-full max-w-4xl mx-auto">
-        {isLoading || !isDbReady ? (
-          <Skeleton className="h-8 w-3/4" />
-        ) : (
-          <input
-            className="text-2xl font-bold bg-transparent border-none outline-none w-full"
-            value={editableTitle}
-            onChange={handleTitleChange}
-            aria-label="Edit title"
-            spellCheck={true}
-          />
-        )}
-      </div>
+    <div className="relative flex h-full w-full bg-background max-h-[calc(100vh-0px)] overflow-hidden">
+      <div className="relative flex flex-1 flex-col min-h-0">
+        {/* Main Content Container */}
+        <div className="flex flex-col h-full w-full min-h-0">
+          {/* Title Section - Fixed height */}
+          <div className="flex-shrink-0 p-4 flex items-center w-full max-w-4xl mx-auto">
+            {isLoading || !isDbReady ? (
+              <Skeleton className="h-8 w-3/4" />
+            ) : (
+              <input
+                className="text-2xl font-bold bg-transparent border-none outline-none w-full"
+                value={editableTitle}
+                onChange={handleTitleChange}
+                aria-label="Edit title"
+                spellCheck={true}
+              />
+            )}
+          </div>
 
-      {/* Main Content - Scrollable area */}
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <main className="h-full overflow-y-auto p-4 w-full max-w-4xl mx-auto">
-          {!isDbReady || isLoading ? (
-            <NoteSkeleton />
-          ) : (
-            <div className="h-full relative">
-              {isStreaming || isTransformationPendingConfirmation ? (
-                <div
-                  className={cn(
-                    "whitespace-pre-line rounded p-2",
-                    isStreaming && "animate-pulse disabled:opacity-100",
-                    isTransformationPendingConfirmation &&
-                    "border-2 border-primary-foreground bg-muted/10 animate-pulse",
-                  )}
-                >
-                  <CustomMarkdown>{transformedText}</CustomMarkdown>
-                </div>
+          {/* Main Content - Scrollable area */}
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <main className="h-full overflow-y-auto p-4 w-full max-w-4xl mx-auto">
+              {!isDbReady || isLoading ? (
+                <NoteSkeleton />
               ) : (
-                <TailwindAdvancedEditor key={id} content={editableContent} onUpdate={handleContentChange} />
-              )}
-              {isTransformationPendingConfirmation && (
-                <div className="absolute top-0 right-0 p-2">
-                  <div className="border bg-white/10 backdrop-blur-md rounded-lg p-3 flex gap-3 items-center">
-                    <Button size="sm" onClick={handleSaveTransformation}>
-                      Accept
-                    </Button>
-                    <Button size="sm" variant="secondary" onClick={handleRejectTransformation}>
-                      Reject
-                    </Button>
-                  </div>
+                <div className="min-h-full relative">
+                  {isStreaming || isTransformationPendingConfirmation ? (
+                    <div
+                      className={cn(
+                        "whitespace-pre-line rounded p-2",
+                        isStreaming && "animate-pulse disabled:opacity-100",
+                        isTransformationPendingConfirmation &&
+                        "border-2 border-primary-foreground bg-muted/10 animate-pulse",
+                      )}
+                    >
+                      <CustomMarkdown>{transformedText}</CustomMarkdown>
+                    </div>
+                  ) : (
+                    <TailwindAdvancedEditor key={id} content={editableContent} onUpdate={handleContentChange} />
+                  )}
+                  {isTransformationPendingConfirmation && (
+                    <div className="absolute top-0 right-0 p-2">
+                      <div className="border bg-white/10 backdrop-blur-md rounded-lg p-3 flex gap-3 items-center">
+                        <Button size="sm" onClick={handleSaveTransformation}>
+                          Accept
+                        </Button>
+                        <Button size="sm" variant="secondary" onClick={handleRejectTransformation}>
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
+            </main>
+          </div>
+
+          {/* Footer Section - Fixed at bottom */}
+          <div className="flex-shrink-0 pt-6 pb-2 border-t bg-background w-full flex flex-col gap-2">
+            <div className="flex px-4 gap-3 w-full max-w-4xl mx-auto">
+              <TransformDropdown onTransform={handleTransform} isStreaming={isStreaming} />
+              <Button size="lg" variant="secondary" onClick={handleDelete} className="flex-1">
+                <Trash2 className="size-4 mr-1" />
+                Delete
+              </Button>
             </div>
-          )}
-        </main>
+            <Footer />
+          </div>
+        </div>
       </div>
 
-      {/* Footer Section - Fixed at bottom */}
-      <div className="flex-shrink-0 pt-6 pb-2 border-t bg-background w-full flex flex-col gap-2">
-        <div className="flex px-4 gap-3 w-full max-w-4xl mx-auto">
-          <TransformDropdown onTransform={handleTransform} isStreaming={isStreaming} />
-          <Button size="lg" variant="secondary" onClick={handleDelete} className="flex-1">
-            <Trash2 className="size-4 mr-1" />
-            Delete
-          </Button>
-        </div>
-        <Footer />
+      {/* Right Sidebar */}
+      <div className="group/sidebar-wrapper has-[data-side=right]:ml-0 h-full">
+        <SidebarAiChat key={note?.id} noteContent={note?.content || {}} />
       </div>
     </div>
   )

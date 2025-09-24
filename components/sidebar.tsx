@@ -59,6 +59,26 @@ export function LeftSidebar() {
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const router = useRouter();
 
+  const handleDeleteNote = async (noteId: string) => {
+    // Check if we're currently viewing the note being deleted
+    const currentNoteId = pathname.split("/").at(-1);
+    const isOnNotePage = pathname.startsWith('/note/');
+
+    try {
+      await deleteNote(noteId);
+
+      // If we're currently viewing the deleted note, redirect to home
+      if (isOnNotePage && currentNoteId === noteId) {
+        router.push("/");
+      }
+
+      toast.success("Document deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete document");
+      console.error("Failed to delete document:", error);
+    }
+  };
+
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNoteTitle.trim()) return;
@@ -91,7 +111,7 @@ export function LeftSidebar() {
               )}
               aria-label="Home"
             >
-              <Image src={'/logo.svg'} width={30} height={30} alt="lol" className="shrink-0" />
+              <Image src={'/logo.svg'} width={28} height={28} alt="Logo" className="shrink-0 dark:invert" />
             </Link>
           </div>
           <SidebarMenuButton
@@ -214,7 +234,6 @@ export function LeftSidebar() {
                         </div>
                         <ul>
                           {isLoading ? (
-                            // Show skeleton loading state
                             Array.from({ length: 4 }).map((_, index) => (
                               <div
                                 key={`skeleton-${index}`}
@@ -229,7 +248,6 @@ export function LeftSidebar() {
                               </div>
                             ))
                           ) : (
-                            // Show actual notes
                             notes.map((note) => {
                               return (
                                 <div
@@ -265,22 +283,16 @@ export function LeftSidebar() {
                                         side="right"
                                         align="start"
                                       >
-                                        <DropdownMenuItem
-                                          // disabled={isExporting}
+                                        {/* <DropdownMenuItem
                                           className="flex cursor-pointer items-center gap-2"
                                         >
-                                          {/* {isDocBeingExported ? (
-                                          <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                          <Download className="h-4 w-4" />
-                                        )} */}
                                           <Download className="h-4 w-4" />
                                           <span>Export Markdown</span>
                                         </DropdownMenuItem>
-                                        <DropdownMenuSeparator />
+                                        <DropdownMenuSeparator /> */}
                                         <DropdownMenuItem
                                           onClick={() => {
-                                            deleteNote(note.id);
+                                            handleDeleteNote(note.id);
                                           }}
                                           className="flex cursor-pointer items-center gap-2"
                                         >
