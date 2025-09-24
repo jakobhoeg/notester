@@ -8,7 +8,7 @@ import { ArrowUpRight, BookPlus, Mic2, Upload } from "lucide-react"
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import Footer from "@/components/footer"
-import ListSkeleton from "./notes/components/list-skeleton"
+import ListSkeleton from "./note/components/list-skeleton"
 import { useRouter } from "next/navigation"
 
 export default function Home() {
@@ -38,7 +38,7 @@ export default function Home() {
     const newNote = await addNote({
       title: "My new note",
     });
-    router.push(`/notes/${newNote.id}`);
+    router.push(`/note/${newNote.id}`);
   }
 
   const handleCloseWriteNewNoteModal = () => {
@@ -80,7 +80,7 @@ export default function Home() {
             <ul className="space-y-2">
               {notes.map((note) => (
                 <li key={note.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <Link href={`/notes/${note.id}`}>
+                  <Link href={`/note/${note.id}`}>
                     <h2 className="font-semibold">{note.title}</h2>
                     <p className="text-sm text-muted-foreground">{note.preview}</p>
                   </Link>

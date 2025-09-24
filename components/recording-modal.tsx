@@ -127,7 +127,7 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
                 ]
               }
             });
-            router.push(`/notes/${newNote.id}`);
+            router.push(`/note/${newNote.id}`);
           },
           {
             loading: "Saving note...",

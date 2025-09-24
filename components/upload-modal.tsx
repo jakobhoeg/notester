@@ -103,7 +103,7 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
                   ]
                 }
               });
-              router.push(`/notes/${newNote.id}`);
+              router.push(`/note/${newNote.id}`);
             },
             {
               loading: "Saving note...",
