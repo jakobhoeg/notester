@@ -205,7 +205,7 @@ export default function SidebarAiChat({ noteContent }: SidebarAIChatProps) {
                   </div>
                 )}
               </ConversationContent>
-              <ConversationScrollButton />
+              <ConversationScrollButton className='group-data-[collapsible=icon]:hidden' />
             </Conversation>
           </SidebarGroup>
 
