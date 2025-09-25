@@ -28,6 +28,7 @@ const options = [
 
 const translationLanguages = [
   { code: "en", label: "English" },
+  { code: "da", label: "Danish" },
   { code: "fr", label: "French" },
   { code: "ja", label: "Japanese" },
   { code: "es", label: "Spanish" },
