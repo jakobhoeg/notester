@@ -1,5 +1,5 @@
 import { CommandGroup, CommandItem, CommandSeparator } from "@/components/ui/command";
-import { useEditor } from "novel";
+import { useEditor, removeAIHighlight } from "novel";
 import { Check, TextQuote, TrashIcon } from "lucide-react";
 
 const AICompletionCommands = ({
@@ -31,6 +31,9 @@ const AICompletionCommands = ({
                 completion,
               )
               .run();
+
+            // Clean up AI highlights after the operation
+            removeAIHighlight(editor!);
           }}
         >
           <Check className="h-4 w-4 text-muted-foreground" />
@@ -51,6 +54,9 @@ const AICompletionCommands = ({
               .focus()
               .insertContentAt(insertPos, completion)
               .run();
+
+            // Clean up AI highlights after the operation
+            removeAIHighlight(editor!);
           }}
         >
           <TextQuote className="h-4 w-4 text-muted-foreground" />
@@ -60,7 +66,15 @@ const AICompletionCommands = ({
       <CommandSeparator />
 
       <CommandGroup>
-        <CommandItem onSelect={onDiscard} value="thrash" className="gap-2 px-4">
+        <CommandItem
+          onSelect={() => {
+            // Clean up AI highlights when discarding
+            removeAIHighlight(editor!);
+            onDiscard();
+          }}
+          value="thrash"
+          className="gap-2 px-4"
+        >
           <TrashIcon className="h-4 w-4 text-muted-foreground" />
           Discard
         </CommandItem>

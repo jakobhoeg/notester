@@ -1,6 +1,7 @@
-import { ArrowDownWideNarrow, CheckCheck, RefreshCcwDot, StepForward, WrapText } from "lucide-react";
-import { getPrevText, useEditor } from "novel";
+import { ArrowDownWideNarrow, CheckCheck, Languages, RefreshCcwDot, StepForward, WrapText, ChevronRight } from "lucide-react";
+import { getPrevText, useEditor, removeAIHighlight } from "novel";
 import { CommandGroup, CommandItem, CommandSeparator } from "@/components/ui/command";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 const options = [
   {
@@ -25,11 +26,19 @@ const options = [
   },
 ];
 
+const translationLanguages = [
+  { code: "en", label: "English" },
+  { code: "fr", label: "French" },
+  { code: "ja", label: "Japanese" },
+  { code: "es", label: "Spanish" },
+];
+
 interface AISelectorCommandsProps {
   onSelect: (value: string, option: string) => void;
+  onTranslate: (text: string, targetLanguage: string) => void;
 }
 
-const AISelectorCommands = ({ onSelect }: AISelectorCommandsProps) => {
+const AISelectorCommands = ({ onSelect, onTranslate }: AISelectorCommandsProps) => {
   const { editor } = useEditor();
 
   return (
@@ -47,10 +56,47 @@ const AISelectorCommands = ({ onSelect }: AISelectorCommandsProps) => {
               key={option.value}
               value={option.value}
             >
-              <option.icon className="h-4 w-4 text-primary" />
+              <option.icon className="size-4 text-primary" />
               {option.label}
             </CommandItem>
           ))}
+        {/* Translation with hover card */}
+        <HoverCard openDelay={200} closeDelay={100}>
+          <HoverCardTrigger asChild>
+            <CommandItem
+              className="flex gap-2 px-4"
+              value="translate"
+              onSelect={() => {
+                // Default to English if no specific language is hovered
+                const slice = editor!.state.selection.content();
+                const text = editor!.storage.markdown.serializer.serialize(slice.content);
+                onTranslate(text, "en");
+              }}
+            >
+              <Languages className="size-4 text-primary" />
+              Translate
+              <ChevronRight className="size-4 ml-auto" />
+            </CommandItem>
+          </HoverCardTrigger>
+          <HoverCardContent side="right" className="w-48 p-2">
+            <div className="grid gap-1">
+              <div className="text-sm font-medium mb-2">Choose language:</div>
+              {translationLanguages.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    const slice = editor!.state.selection.content();
+                    const text = editor!.storage.markdown.serializer.serialize(slice.content);
+                    onTranslate(text, lang.code);
+                  }}
+                  className="flex items-center gap-2 px-2 py-1 text-sm rounded hover:bg-primary/30 hover:text-accent-foreground transition-colors text-left"
+                >
+                  {lang.label}
+                </button>
+              ))}
+            </div>
+          </HoverCardContent>
+        </HoverCard>
       </CommandGroup>
       < CommandSeparator />
       <CommandGroup heading="Use AI to do more" >
@@ -73,7 +119,7 @@ const AISelectorCommands = ({ onSelect }: AISelectorCommandsProps) => {
           value="continue"
           className="gap-2 px-4"
         >
-          <StepForward className="h-4 w-4 text-primary" />
+          <StepForward className="size-4 text-primary" />
           Continue writing
         </CommandItem>
       </CommandGroup>

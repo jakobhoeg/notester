@@ -2,9 +2,9 @@
 
 import { Command, CommandInput } from "@/components/ui/command";
 
-import { ArrowUp, Sparkles } from "lucide-react";
+import { ArrowUp, Sparkles, Languages } from "lucide-react";
 import { useEditor } from "novel";
-import { addAIHighlight } from "novel";
+import { addAIHighlight, removeAIHighlight } from "novel";
 import { useState } from "react";
 import Markdown from "react-markdown";
 import { toast } from "sonner";
@@ -28,8 +28,11 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
   const [inputValue, setInputValue] = useState("");
   const [completion, setCompletion] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [translatedText, setTranslatedText] = useState("");
+  const [isTranslating, setIsTranslating] = useState(false);
 
   const hasCompletion = completion.length > 0;
+  const hasTranslation = translatedText.length > 0;
 
   const handleComplete = async (prompt: string, option: string, command?: string) => {
     if (!doesBrowserSupportBuiltInAI()) {
@@ -56,6 +59,7 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
     try {
       setIsLoading(true);
       setCompletion("");
+      setTranslatedText(""); // Clear any existing translation
 
       let systemPrompt = "";
       let userPrompt = "";
@@ -101,11 +105,90 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
         fullCompletion += chunk;
         setCompletion(fullCompletion);
       }
+
+      // Clean up AI highlights after completion is generated
+      removeAIHighlight(editor!);
     } catch (error) {
       console.error("Error generating completion:", error);
       toast.error("Failed to generate completion");
+      // Clean up AI highlights on error too
+      removeAIHighlight(editor!);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleTranslate = async (text: string, targetLanguage: string) => {
+    if (Translator === undefined) {
+      toast.error("Your browser does not support the Translation API.");
+      return;
+    }
+
+    if (LanguageDetector === undefined) {
+      toast.error("Your browser does not support the Language Detector API.");
+      return;
+    }
+
+    try {
+      setIsTranslating(true);
+      setTranslatedText("");
+      setCompletion(""); // Clear any existing completion
+
+      // Detect source language
+      const detector = await LanguageDetector.create();
+      const detected = await detector.detect(text.trim());
+      const sourceLanguage = detected[0]?.detectedLanguage;
+
+      if (!sourceLanguage) {
+        toast.error("Could not detect source language.");
+        return;
+      }
+
+      const availability = await Translator.availability({
+        sourceLanguage,
+        targetLanguage
+      });
+
+      if (availability === 'unavailable') {
+        const displaySourceLanguage = new Intl.DisplayNames(['en'], { type: 'language' }).of(sourceLanguage) || sourceLanguage;
+        const displayTargetLanguage = new Intl.DisplayNames(['en'], { type: 'language' }).of(targetLanguage) || targetLanguage;
+        toast.error(`${displaySourceLanguage} - ${displayTargetLanguage} translation pair is not supported.`);
+        return;
+      }
+
+      const translator = await Translator.create({
+        sourceLanguage,
+        targetLanguage
+      });
+
+      const stream = translator.translateStreaming(text.trim());
+      let fullTranslation = "";
+
+      // translateStreaming returns a ReadableStream<string>
+      const reader = stream.getReader();
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          fullTranslation += value;
+          setTranslatedText(fullTranslation);
+        }
+      } finally {
+        reader.releaseLock();
+      }
+
+      // Clean up AI highlights after translation is complete
+      removeAIHighlight(editor!);
+
+    } catch (error) {
+      console.error("Translation error:", error);
+      toast.error("Translation failed. Please try again.");
+      // Clean up AI highlights on error too
+      removeAIHighlight(editor!);
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -121,6 +204,25 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
         </div>
       )}
 
+      {hasTranslation && (
+        <div className="flex max-h-[400px]">
+          <ScrollArea>
+            <div className="prose p-2 px-4 prose-sm">
+              <div className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+                Translation:
+                {isTranslating && (
+                  <span className="text-xs text-blue-500 flex items-center gap-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    streaming...
+                  </span>
+                )}
+              </div>
+              <div className="whitespace-pre-wrap">{translatedText}</div>
+            </div>
+          </ScrollArea>
+        </div>
+      )}
+
       {isLoading && (
         <div className="flex h-12 w-full items-center px-4 text-sm font-medium text-muted-foreground">
           <Sparkles className="mr-2 h-4 w-4 shrink-0  " />
@@ -130,7 +232,27 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
           </div>
         </div>
       )}
-      {!isLoading && (
+
+      {isTranslating && !hasTranslation && (
+        <div className="flex h-12 w-full items-center px-4 text-sm font-medium text-muted-foreground">
+          <Languages className="mr-2 h-4 w-4 shrink-0" />
+          Starting translation...
+          <div className="ml-2 mt-1">
+            <Loader className="size-4" />
+          </div>
+        </div>
+      )}
+
+      {isTranslating && hasTranslation && (
+        <div className="flex h-12 w-full items-center px-4 text-sm font-medium text-muted-foreground">
+          <Languages className="mr-2 h-4 w-4 shrink-0" />
+          Streaming translation...
+          <div className="ml-2 mt-1">
+            <Loader className="size-4" />
+          </div>
+        </div>
+      )}
+      {!isLoading && !isTranslating && (
         <>
           <div className="relative">
             <CommandInput
@@ -172,13 +294,26 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
           {hasCompletion ? (
             <AICompletionCommands
               onDiscard={() => {
-                editor!.chain().unsetHighlight().focus().run();
+                setCompletion("");
+                removeAIHighlight(editor!);
                 onOpenChange(false);
               }}
               completion={completion}
             />
+          ) : hasTranslation ? (
+            <AICompletionCommands
+              onDiscard={() => {
+                setTranslatedText("");
+                removeAIHighlight(editor!);
+                onOpenChange(false);
+              }}
+              completion={translatedText}
+            />
           ) : (
-            <AISelectorCommands onSelect={(value, option) => handleComplete(value, option)} />
+            <AISelectorCommands
+              onSelect={(value, option) => handleComplete(value, option)}
+              onTranslate={handleTranslate}
+            />
           )}
         </>
       )}

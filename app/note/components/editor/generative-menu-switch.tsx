@@ -13,7 +13,12 @@ const GenerativeMenuSwitch = ({ children, open, onOpenChange }: GenerativeMenuSw
   const { editor } = useEditor();
 
   useEffect(() => {
-    if (!open) removeAIHighlight(editor!);
+    if (!open) {
+      // Clean up AI highlights when closing
+      removeAIHighlight(editor!);
+      // Also clean up any remaining highlights
+      editor!.chain().unsetHighlight().run();
+    }
   }, [open]);
   return (
     <EditorBubble
@@ -21,6 +26,8 @@ const GenerativeMenuSwitch = ({ children, open, onOpenChange }: GenerativeMenuSw
         placement: open ? "bottom-start" : "top",
         onHidden: () => {
           onOpenChange(false);
+          // Double cleanup to ensure highlights are always removed
+          removeAIHighlight(editor!);
           editor!.chain().unsetHighlight().run();
         },
       }}
