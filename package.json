@@ -30,6 +30,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@tanstack/react-query": "^5.83.0",
+    "@types/dom-chromium-ai": "^0.0.10",
     "ai": "^5.0.51",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
