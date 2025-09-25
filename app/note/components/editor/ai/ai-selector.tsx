@@ -267,8 +267,8 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
                   if (completion) {
                     handleComplete(completion, "zap", inputValue).then(() => setInputValue(""));
                   } else {
-                    const slice = editor!.state.selection.content();
-                    const text = editor!.storage.markdown.serializer.serialize(slice.content);
+                    const { from, to } = editor!.state.selection;
+                    const text = editor!.state.doc.textBetween(from, to);
                     handleComplete(text, "zap", inputValue).then(() => setInputValue(""));
                   }
                 }
@@ -282,8 +282,8 @@ export function AISelector({ onOpenChange }: AISelectorProps) {
                   return handleComplete(completion, "zap", inputValue).then(() => setInputValue(""));
                 }
 
-                const slice = editor!.state.selection.content();
-                const text = editor!.storage.markdown.serializer.serialize(slice.content);
+                const { from, to } = editor!.state.selection;
+                const text = editor!.state.doc.textBetween(from, to);
 
                 handleComplete(text, "zap", inputValue).then(() => setInputValue(""));
               }}

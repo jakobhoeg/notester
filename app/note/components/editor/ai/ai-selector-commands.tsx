@@ -48,8 +48,9 @@ const AISelectorCommands = ({ onSelect, onTranslate }: AISelectorCommandsProps) 
           options.map((option) => (
             <CommandItem
               onSelect={(value) => {
-                const slice = editor!.state.selection.content();
-                const text = editor!.storage.markdown.serializer.serialize(slice.content);
+                const { from, to } = editor!.state.selection;
+                const text = editor!.state.doc.textBetween(from, to);
+
                 onSelect(text, value);
               }}
               className="flex gap-2 px-4"
@@ -68,8 +69,9 @@ const AISelectorCommands = ({ onSelect, onTranslate }: AISelectorCommandsProps) 
               value="translate"
               onSelect={() => {
                 // Default to English if no specific language is hovered
-                const slice = editor!.state.selection.content();
-                const text = editor!.storage.markdown.serializer.serialize(slice.content);
+                const { from, to } = editor!.state.selection;
+                const text = editor!.state.doc.textBetween(from, to);
+
                 onTranslate(text, "en");
               }}
             >
@@ -85,8 +87,9 @@ const AISelectorCommands = ({ onSelect, onTranslate }: AISelectorCommandsProps) 
                 <button
                   key={lang.code}
                   onClick={() => {
-                    const slice = editor!.state.selection.content();
-                    const text = editor!.storage.markdown.serializer.serialize(slice.content);
+                    const { from, to } = editor!.state.selection;
+                    const text = editor!.state.doc.textBetween(from, to);
+
                     onTranslate(text, lang.code);
                   }}
                   className="flex items-center gap-2 px-2 py-1 text-sm rounded hover:bg-primary/30 hover:text-accent-foreground transition-colors text-left"
@@ -103,14 +106,8 @@ const AISelectorCommands = ({ onSelect, onTranslate }: AISelectorCommandsProps) 
         <CommandItem
           onSelect={
             () => {
-              const pos = editor!.state.selection.from;
-              let text = getPrevText(editor!, pos);
-
-              // If getPrevText returns empty, try to get the full document text as context
-              if (!text || text.trim().length === 0) {
-                const doc = editor!.state.doc;
-                text = editor!.storage.markdown.serializer.serialize(doc);
-              }
+              const { from, to } = editor!.state.selection;
+              const text = editor!.state.doc.textBetween(from, to);
 
               console.log("Continue writing text:", text);
               onSelect(text, "continue");
