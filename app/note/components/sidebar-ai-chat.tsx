@@ -85,7 +85,7 @@ export default function SidebarAiChat({ noteContent }: SidebarAIChatProps) {
               "group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:p-1",
             )}
           >
-            <Conversation className="flex-1">
+            <Conversation className="flex-1 group-data-[collapsible=icon]:hidden">
               <ConversationContent>
                 {messages.map((m, index) => (
                   <Message
