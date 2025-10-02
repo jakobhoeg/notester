@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Sidebar, SidebarContent, SidebarGroup, SidebarHeader, SidebarMenuButton, SidebarProvider, SidebarTrigger } from '@/components/providers/sidebar'
-import { Copy, PanelRight, PlusIcon, RefreshCcw } from 'lucide-react'
+import { Copy, EraserIcon, PanelRight, PlusIcon, RefreshCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useChat } from "@ai-sdk/react";
 import { BuiltInAIUIMessage } from '@built-in-ai/core';
@@ -31,7 +31,7 @@ export default function SidebarAiChat({ noteContent }: SidebarAIChatProps) {
     setCurrentNoteContent(noteContent);
   }, [noteContent, setCurrentNoteContent]);
 
-  const { error, status, sendMessage, messages, regenerate, stop } =
+  const { error, status, sendMessage, messages, regenerate, stop, setMessages } =
     useChat<BuiltInAIUIMessage>({
       transport: new ClientSideChatTransport(),
       onError(error) {
@@ -67,16 +67,29 @@ export default function SidebarAiChat({ noteContent }: SidebarAIChatProps) {
         className="relative h-full max-h-[calc(100vh)] border-border border-l bg-background text-foreground transition-all duration-300 ease-in-out overflow-hidden"
         variant="sidebar"
       >
-        <SidebarHeader className="flex flex-row items-center justify-between border-b bg-background px-4 group-data-[collapsible=icon]:px-2">
-          <SidebarMenuButton
-            tooltip="Toggle AI Assistant"
-            className="-mr-2 h-8 w-8"
-            asChild
+        <SidebarHeader className="flex flex-column justify-between border-b bg-background px-4 group-data-[collapsible=icon]:px-2">
+          <div className='flex items-center justify-between'>
+            <p className='text-sm font-semibold group-data-[collapsible=icon]:hidden'>Notes AI assistant</p>
+            <SidebarMenuButton
+              tooltip="Toggle AI Assistant"
+              className="-mr-2 size-8"
+              asChild
+            >
+              <SidebarTrigger>
+                <PanelRight className="size-4" />
+              </SidebarTrigger>
+            </SidebarMenuButton>
+          </div>
+          <Button
+            size='sm'
+            variant='outline'
+            onClick={() => {
+              setMessages([])
+            }}
+            className='text-xs group-data-[collapsible=icon]:hidden'
           >
-            <SidebarTrigger>
-              <PanelRight className="h-4 w-4" />
-            </SidebarTrigger>
-          </SidebarMenuButton>
+            Clear chat
+          </Button>
         </SidebarHeader>
         <SidebarContent className="group-data-[collapsible=icon]:p-0 flex flex-col h-full">
           <SidebarGroup
@@ -86,8 +99,13 @@ export default function SidebarAiChat({ noteContent }: SidebarAIChatProps) {
             )}
           >
             <Conversation className="flex-1 group-data-[collapsible=icon]:hidden">
+              {messages.length === 0 && (
+                <div className='h-full w-2/3 mx-auto text-center flex justify-center items-center'>
+                  Ask questions about your note
+                </div>
+              )}
               <ConversationContent>
-                {messages.map((m, index) => (
+                {messages.length > 0 && messages.map((m, index) => (
                   <Message
                     from={m.role === "system" ? "assistant" : m.role}
                     key={m.id}
@@ -117,28 +135,6 @@ export default function SidebarAiChat({ noteContent }: SidebarAIChatProps) {
                                 )}
                             </div>
                           );
-                        })}
-
-                      {/* Handle file parts */}
-                      {m.parts
-                        .filter((part) => part.type === "file")
-                        .map((part, partIndex) => {
-                          if (part.mediaType?.startsWith("image/")) {
-                            return (
-                              <div key={partIndex} className="mt-2">
-                                <Image
-                                  src={part.url}
-                                  width={300}
-                                  height={300}
-                                  alt={part.filename || "Uploaded image"}
-                                  className="object-contain max-w-sm rounded-lg border"
-                                />
-                              </div>
-                            );
-                          }
-
-                          // TODO: Handle other file types
-                          return null;
                         })}
 
                       {/* Handle text parts */}
