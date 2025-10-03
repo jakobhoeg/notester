@@ -204,4 +204,46 @@
     pointer-events: none;
     height: 0;
   }
+
+  /* AI Autocomplete Styles */
+  .ai-autocomplete-suggestion {
+    color: hsl(var(--muted-foreground));
+    font-style: italic;
+    opacity: 0.5;
+    pointer-events: none;
+    user-select: none;
+    position: relative;
+    display: inline-block;
+    animation: flash 2s ease-in-out infinite;
+    font-weight: 400;
+    white-space: nowrap;
+    max-width: 300px;
+    overflow: visible;
+  }
+
+  @keyframes flash {
+
+    0%,
+    100% {
+      opacity: 0.8;
+      background: hsl(var(--muted) / 0.3);
+    }
+
+    50% {
+      opacity: 0.5;
+      background: hsl(var(--muted) / 0.1);
+    }
+  }
+
+  @keyframes pulse {
+
+    0%,
+    100% {
+      opacity: 0.7;
+    }
+
+    50% {
+      opacity: 0.3;
+    }
+  }
 }

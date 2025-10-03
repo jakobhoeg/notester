@@ -19,6 +19,7 @@ import { Separator } from "@/components/ui/separator";
 import { slashCommand, suggestionItems } from "./slash-command";
 import GenerativeMenuSwitch from "./generative-menu-switch";
 import { NodeSelector } from "./node-selector";
+import { AutocompleteIndicator } from "./ai/ai-autocomplete-indicator";
 
 const extensions = [...defaultExtensions, slashCommand];
 
@@ -43,6 +44,7 @@ const TailwindAdvancedEditor = ({ content, onUpdate }: TailwindAdvancedEditorPro
   return (
     <div className="relative w-full max-w-screen-lg">
       <div className="flex absolute right-0 -top-4 z-10 mb-5 gap-2">
+        <AutocompleteIndicator />
         <div className="rounded-lg bg-secondary px-2 py-1 text-sm text-muted-foreground">{saveStatus}</div>
         {charsCount > 0 && (
           <div className="rounded-lg bg-secondary px-2 py-1 text-sm text-muted-foreground">
@@ -62,7 +64,7 @@ const TailwindAdvancedEditor = ({ content, onUpdate }: TailwindAdvancedEditorPro
             },
             attributes: {
               class:
-                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
+                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full overflow-hidden",
             },
           }}
           onCreate={({ editor }) => {
