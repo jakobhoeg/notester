@@ -21,6 +21,7 @@ import {
   Youtube,
 } from "novel";
 import { Heading } from "@tiptap/extension-heading";
+import { AIAutocompleteExtension } from "./ai/ai-autocomplete-extension";
 
 import { cx } from "class-variance-authority";
 import { common, createLowlight } from "lowlight";
@@ -193,6 +194,13 @@ const markdownExtension = MarkdownExtension.configure({
   transformCopiedText: false,
 });
 
+const aiAutocomplete = AIAutocompleteExtension.configure({
+  debounceMs: 1000,
+  minChars: 10,
+  maxSuggestionLength: 100,
+  enabled: true,
+});
+
 export const defaultExtensions = [
   starterKit,
   heading,
@@ -203,6 +211,7 @@ export const defaultExtensions = [
   taskItem,
   horizontalRule,
   aiHighlight,
+  aiAutocomplete,
   codeBlockLowlight,
   youtube,
   twitter,

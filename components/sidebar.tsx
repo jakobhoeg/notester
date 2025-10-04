@@ -72,10 +72,10 @@ export function LeftSidebar() {
         router.push("/");
       }
 
-      toast.success("Document deleted successfully");
+      toast.success("Note deleted successfully");
     } catch (error) {
-      toast.error("Failed to delete document");
-      console.error("Failed to delete document:", error);
+      toast.error("Failed to delete note");
+      console.error("Failed to delete note:", error);
     }
   };
 
@@ -85,7 +85,7 @@ export function LeftSidebar() {
 
     try {
       const result = await addNote({ title: newNoteTitle.trim() })
-      toast.success("Document created successfully");
+      toast.success("Note created successfully");
       router.replace(`/note/${result.id}`);
       setIsCreatingNote(false);
       setNewNoteTitle("");

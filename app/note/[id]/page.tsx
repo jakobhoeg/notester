@@ -10,17 +10,18 @@ import { toast } from "sonner"
 import { TransformDropdown } from "../components/transformation-panel"
 import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core"
 import { streamText } from "ai"
-import { cn, generateTransformationPrompt, createContentFromText } from "@/lib/utils"
+import { cn, generateTransformationPrompt, createContentFromText, appendTextToContent } from "@/lib/utils"
 import { CustomMarkdown } from "@/components/ui/markdown"
 import Footer from "@/components/footer"
 import { Trash2 } from "lucide-react"
 import { useDbLoading } from "@/app/pglite-wrapper"
 import { Skeleton } from "@/components/ui/skeleton"
 import NoteSkeleton from "@/components/note-skeleton"
-import { JSONContent } from "novel"
+import { JSONContent, type EditorInstance } from "novel"
 import TailwindAdvancedEditor from "../components/editor/tailwind-editor"
 import { createEmptyContent } from "@/lib/utils"
 import SidebarAiChat from "../components/sidebar-ai-chat"
+import { DockFooter } from "@/components/dock-footer"
 
 const DELAY_SAVE = 1000
 
@@ -53,9 +54,11 @@ export default function NotePage() {
   const [preTransformationContent, setPreTransformationContent] = useState<JSONContent>(createEmptyContent())
   const [isTransformationPendingConfirmation, setIsTransformationPendingConfirmation] = useState(false)
   const [transformedText, setTransformedText] = useState("")
+  const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true)
 
   const titleDebounceTimeout = useRef<NodeJS.Timeout | null>(null)
   const contentDebounceTimeout = useRef<NodeJS.Timeout | null>(null)
+  const editorRef = useRef<EditorInstance | null>(null)
 
   useEffect(() => {
     if (note) {
@@ -108,7 +111,6 @@ export default function NotePage() {
           id: note.id,
           updates: { content: newContent },
         })
-        toast.success("Note saved!")
       }
     }, DELAY_SAVE)
   }
@@ -140,7 +142,6 @@ export default function NotePage() {
         id: note.id,
         updates: { content: newContent },
       })
-      toast.success("Note saved!")
     }
   }
 
@@ -148,6 +149,33 @@ export default function NotePage() {
     setEditableContent(preTransformationContent)
     setIsTransformationPendingConfirmation(false)
     setTransformedText("")
+  }
+
+  const handleEditorCreate = (editor: EditorInstance) => {
+    editorRef.current = editor
+
+    // Get initial autocomplete state from the extension
+    const extension = editor.extensionManager.extensions.find(ext => ext.name === 'aiAutocomplete');
+    if (extension) {
+      setIsAutocompleteEnabled(extension.options.enabled);
+    }
+  }
+
+  const handleToggleAutocomplete = () => {
+    if (editorRef.current) {
+      editorRef.current.commands.toggleAutocomplete();
+
+      // Update local state by getting the new value from the extension
+      const extension = editorRef.current.extensionManager.extensions.find(ext => ext.name === 'aiAutocomplete');
+      if (extension) {
+        setIsAutocompleteEnabled(extension.options.enabled);
+      }
+
+      // Clear any existing suggestion when disabling
+      if (isAutocompleteEnabled) {
+        editorRef.current.commands.clearAutocompleteSuggestion();
+      }
+    }
   }
 
   const handleTransform = async (typeName: string) => {
@@ -196,6 +224,55 @@ export default function NotePage() {
       setIsTransformationPendingConfirmation(true)
     }
   }
+
+  const handleTranscriptionComplete = async (transcription: string) => {
+    if (!note) return;
+
+    // Update the editor directly by appending content
+    if (editorRef.current) {
+      // Move cursor to the end
+      editorRef.current.commands.focus('end');
+
+      // Add some spacing if there's existing content
+      const currentContent = editorRef.current.getJSON();
+      if (currentContent.content && currentContent.content.length > 0) {
+        editorRef.current.commands.createParagraphNear();
+      }
+
+      // Insert the transcribed text
+      editorRef.current.commands.insertContent({
+        type: 'paragraph',
+        content: [{ type: 'text', text: transcription }]
+      });
+
+      // Get the updated content from the editor
+      const updatedContent = editorRef.current.getJSON();
+      setEditableContent(updatedContent);
+
+      // Clear any existing timeout and save immediately
+      if (contentDebounceTimeout.current) {
+        clearTimeout(contentDebounceTimeout.current);
+      }
+
+      await updateNote({
+        id: note.id,
+        updates: { content: updatedContent },
+      });
+    } else {
+      // Fallback to the original method if no editor reference
+      const updatedContent = appendTextToContent(editableContent, transcription);
+      setEditableContent(updatedContent);
+
+      if (contentDebounceTimeout.current) {
+        clearTimeout(contentDebounceTimeout.current);
+      }
+
+      await updateNote({
+        id: note.id,
+        updates: { content: updatedContent },
+      });
+    }
+  };
 
   if (isDbReady && !isLoading && !note) {
     return (
@@ -249,11 +326,16 @@ export default function NotePage() {
                       <CustomMarkdown>{transformedText}</CustomMarkdown>
                     </div>
                   ) : (
-                    <TailwindAdvancedEditor key={id} content={editableContent} onUpdate={handleContentChange} />
+                    <TailwindAdvancedEditor
+                      key={id}
+                      content={editableContent}
+                      onUpdate={handleContentChange}
+                      onEditorCreate={handleEditorCreate}
+                    />
                   )}
                   {isTransformationPendingConfirmation && (
                     <div className="absolute top-0 right-0 p-2">
-                      <div className="border bg-white/10 backdrop-blur-md rounded-lg p-3 flex gap-3 items-center">
+                      <div className="border bg-white/10 dark:bg-accent backdrop-blur-md rounded-lg p-3 flex gap-3 items-center">
                         <Button size="sm" onClick={handleSaveTransformation}>
                           Accept
                         </Button>
@@ -269,14 +351,17 @@ export default function NotePage() {
           </div>
 
           {/* Footer Section - Fixed at bottom */}
-          <div className="flex-shrink-0 pt-6 pb-2 border-t bg-background w-full flex flex-col gap-2">
-            <div className="flex px-4 gap-3 w-full max-w-4xl mx-auto">
-              <TransformDropdown onTransform={handleTransform} isStreaming={isStreaming} />
-              <Button size="lg" variant="secondary" onClick={handleDelete} className="flex-1">
-                <Trash2 className="size-4 mr-1" />
-                Delete
-              </Button>
-            </div>
+          <div className="flex-shrink-0 pt-6 pb-2 w-full flex flex-col gap-2">
+            <DockFooter
+              onTransform={handleTransform}
+              isStreaming={isStreaming}
+              isAutocompleteEnabled={isAutocompleteEnabled}
+              onToggleAutocomplete={handleToggleAutocomplete}
+              onTranscriptionComplete={handleTranscriptionComplete}
+              showTransformDropdown={true}
+              showAutocompleteToggle={true}
+              showTranscriptionButton={true}
+            />
             <Footer />
           </div>
         </div>

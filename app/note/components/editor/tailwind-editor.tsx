@@ -11,11 +11,10 @@ import {
   type JSONContent,
   handleCommandNavigation,
 } from "novel";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { defaultExtensions } from "./extensions";
 import { Separator } from "@/components/ui/separator";
-
 import { slashCommand, suggestionItems } from "./slash-command";
 import GenerativeMenuSwitch from "./generative-menu-switch";
 import { NodeSelector } from "./node-selector";
@@ -25,13 +24,15 @@ const extensions = [...defaultExtensions, slashCommand];
 interface TailwindAdvancedEditorProps {
   content: JSONContent;
   onUpdate: (content: JSONContent) => void;
+  onEditorCreate?: (editor: EditorInstance) => void;
 }
 
-const TailwindAdvancedEditor = ({ content, onUpdate }: TailwindAdvancedEditorProps) => {
+const TailwindAdvancedEditor = ({ content, onUpdate, onEditorCreate }: TailwindAdvancedEditorProps) => {
   const [saveStatus, setSaveStatus] = useState("Saved");
   const [charsCount, setCharsCount] = useState<number>(0);
   const [openNode, setOpenNode] = useState(false);
   const [openAI, setOpenAI] = useState(false);
+  const editorRef = useRef<EditorInstance | null>(null);
 
   const debouncedUpdates = useDebouncedCallback(async (editor: EditorInstance) => {
     const json = editor.getJSON();
@@ -39,6 +40,23 @@ const TailwindAdvancedEditor = ({ content, onUpdate }: TailwindAdvancedEditorPro
     setCharsCount(editor.storage.characterCount?.words() || 0);
     setSaveStatus("Saved");
   }, 500);
+
+  // Effect to update editor content when content prop changes (only for initial load)
+  useEffect(() => {
+    if (editorRef.current && content) {
+      const currentContent = editorRef.current.getJSON();
+      // Only update if the content is actually different and editor is empty or significantly different
+      const isEditorEmpty = !currentContent.content || currentContent.content.length === 0;
+      const isContentDifferent = JSON.stringify(currentContent) !== JSON.stringify(content);
+
+      if (isContentDifferent && (isEditorEmpty || content.content?.length !== currentContent.content?.length)) {
+        // Validate content before setting it
+        if (content.type === 'doc' && Array.isArray(content.content)) {
+          editorRef.current.commands.setContent(content);
+        }
+      }
+    }
+  }, [content]);
 
   return (
     <div className="relative w-full max-w-screen-lg">
@@ -62,7 +80,7 @@ const TailwindAdvancedEditor = ({ content, onUpdate }: TailwindAdvancedEditorPro
             },
             attributes: {
               class:
-                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full",
+                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full overflow-hidden",
             },
           }}
           onCreate={({ editor }) => {
@@ -81,6 +99,12 @@ const TailwindAdvancedEditor = ({ content, onUpdate }: TailwindAdvancedEditorPro
               console.error('Error setting editor content:', error);
               editor.commands.setContent({ type: 'doc', content: [] });
             }
+
+            // Store editor reference
+            editorRef.current = editor;
+
+            // Call the onEditorCreate callback if provided
+            onEditorCreate?.(editor);
           }}
           onUpdate={({ editor }) => {
             debouncedUpdates(editor);
