@@ -4,9 +4,9 @@ import "./globals.css";
 import PGliteWrapper from "./pglite-wrapper";
 import TanstackProvider from "./tanstack-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import Navbar from "@/components/navbar";
 import { SidebarProvider } from "@/components/providers/sidebar";
 import { LeftSidebar } from "@/components/sidebar";
+import { Toaster } from "@/components/ui/sonner"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,6 +52,7 @@ export default function RootLayout({
                   </main>
                 </div>
               </SidebarProvider>
+              <Toaster position="top-right" />
             </TanstackProvider>
           </PGliteWrapper>
         </ThemeProvider>

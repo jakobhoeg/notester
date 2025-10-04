@@ -13,8 +13,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAudioRecording } from "@/app/hooks/useAudioRecording";
 import { useNotes } from "@/app/hooks/useNotes";
-import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core";
-import { generateText } from "ai";
+import { useTranscription } from "@/app/hooks/useTranscription";
 import { AudioWaveform } from "./ui/audio-wave";
 import { Mic2, Pause, StopCircle, X } from "lucide-react";
 import { Loader } from "./ai-elements/loader";
@@ -38,11 +37,13 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
     resetRecording,
   } = useAudioRecording();
   const { addNote } = useNotes();
+  const { transcribeAudio } = useTranscription();
   const router = useRouter();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [pendingSave, setPendingSave] = useState(false);
   const [processingStatus, setProcessingStatus] = useState("");
+  const [shouldSaveOnStop, setShouldSaveOnStop] = useState(false);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -55,63 +56,21 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
       toast.error("No audio to save. Please record something first.");
       return;
     }
+
     setIsProcessing(true);
     try {
-      if (!doesBrowserSupportBuiltInAI()) {
-        toast.error("Your browser does not support built-in AI.");
-        return;
-      }
-
-      const model = builtInAI();
-      const availability = await model.availability();
-
-      if (availability === "unavailable") {
-        toast.error("Built-in AI is not available on your device.");
-        return;
-      }
-
-      if (availability === "downloadable") {
-        setProcessingStatus("Downloading model...");
-        await model.createSessionWithProgress((progress) => {
-          setProcessingStatus(
-            `Downloading model... ${Math.round(progress * 100)}%`
-          );
-        });
-      }
-
-      setProcessingStatus("Transcribing audio...");
-      const audioData = new Uint8Array(await audioBlob.arrayBuffer());
-
-      const { text: transcription, usage } = await generateText({
-        model: model,
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Transcribe the following audio. Include EVERYTHING." },
-              { type: "file", mediaType: "audio/webm", data: audioData },
-            ],
-          },
-        ],
+      const result = await transcribeAudio(audioBlob, {
+        onProgress: setProcessingStatus,
+        generateTitle: true,
       });
 
-      console.log(usage)
+      if (result && result.title && result.transcription) {
+        console.log(result.usage);
 
-      setProcessingStatus("Generating title...");
-      const { text: title } = await generateText({
-        model: model,
-        prompt: `Generate a title for the following transcription with a max of 10 words or 80 characters: 
-        ${transcription}
-        
-        Only return the title, nothing else, no explanation, and no quotes or follow-up.
-        `,
-      });
-
-      if (title.trim() && transcription.trim()) {
         toast.promise(
           async () => {
             const newNote = await addNote({
-              title,
+              title: result.title!,
               content: {
                 type: "doc",
                 content: [
@@ -120,7 +79,7 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
                     content: [
                       {
                         type: "text",
-                        text: transcription
+                        text: result.transcription
                       }
                     ]
                   }
@@ -140,7 +99,7 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
       }
     } catch (err) {
       console.error(err);
-      toast.error("Failed to transcribe audio. Please try again.");
+      // Error handling is already done in the transcription hook
     } finally {
       setIsProcessing(false);
       onClose();
@@ -153,6 +112,14 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
       handleSaveRecording();
     }
   }, [pendingSave, audioBlob]);
+
+  // Handle auto-save when recording stops and audioBlob becomes available
+  useEffect(() => {
+    if (shouldSaveOnStop && audioBlob && !recording) {
+      setShouldSaveOnStop(false);
+      handleSaveRecording();
+    }
+  }, [shouldSaveOnStop, audioBlob, recording]);
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -228,7 +195,7 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
               onClick={() => {
                 if (recording) {
                   stopRecording();
-                  setPendingSave(true);
+                  setShouldSaveOnStop(true);
                 } else {
                   startRecording();
                 }

@@ -39,7 +39,7 @@ export const AIAutocompleteExtension = Extension.create<AutocompleteOptions>({
   addOptions() {
     return {
       debounceMs: 500,
-      minChars: 10,
+      minChars: 5,
       maxSuggestionLength: 250,
       enabled: true,
     };

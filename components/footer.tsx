@@ -7,19 +7,14 @@ export default function Footer() {
   return (
     <div className="text-xs p-2 text-center text-muted-foreground/60 flex items-center justify-center w-full">
       <p>
-        Powered by {" "}
-        <Link href="https://developer.chrome.com/docs/ai/built-in" target="_blank" rel="noopener noreferrer" className="font-bold inline-flex items-center underline">
-          Built-in AI
+        Built for the {" "}
+        <Link href="https://developer.chrome.com/blog/ai-challenge-2025" target="_blank" rel="noopener noreferrer" className="font-bold inline-flex items-center underline">
+          Built-in AI Hackathon
           <ArrowUpRight className="size-2.5" />
         </Link>
-        ,{" "}
-        <Link href="https://v5.ai-sdk.dev" target="_blank" rel="noopener noreferrer" className="font-bold inline-flex items-center underline">
-          Vercel AI SDK
-          <ArrowUpRight className="size-2.5" />
-        </Link>
-        and {" "}
-        <Link href="https://github.com/jakobhoeg/built-in-ai" target="_blank" rel="noopener noreferrer" className="font-bold inline-flex items-center underline">
-          @built-in-ai/core
+        {" "} by {" "}
+        <Link href="https://github.com/jakobhoeg/notester" target="_blank" rel="noopener noreferrer" className="font-bold inline-flex items-center underline">
+          @jakobhoeg
           <ArrowUpRight className="size-2.5" />
         </Link>
       </p>

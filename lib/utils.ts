@@ -67,6 +67,40 @@ export function createContentFromText(text: string): JSONContent {
   };
 }
 
+// Helper function to append text to existing JSONContent
+export function appendTextToContent(existingContent: JSONContent, newText: string): JSONContent {
+  if (!newText.trim()) {
+    return existingContent;
+  }
+
+  // Ensure we have valid existing content
+  const validatedContent = validateAndSanitizeContent(existingContent);
+
+  // Create new paragraph with the transcribed text
+  const newParagraph = {
+    type: "paragraph",
+    content: [{ type: "text", text: newText }]
+  };
+
+  // If there's existing content, add a line break and then the new content
+  const updatedContent = [...(validatedContent.content || [])];
+
+  // Add some spacing if there's existing content
+  if (updatedContent.length > 0) {
+    updatedContent.push({
+      type: "paragraph",
+      content: []
+    });
+  }
+
+  updatedContent.push(newParagraph);
+
+  return {
+    type: "doc",
+    content: updatedContent
+  };
+}
+
 
 export const MAIN_LANGUAGES = [
   {
