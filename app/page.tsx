@@ -10,9 +10,10 @@ import { useEffect, useState } from "react"
 import Footer from "@/components/footer"
 import ListSkeleton from "./note/components/list-skeleton"
 import { useRouter } from "next/navigation"
+import ImageUpload from "@/components/image-upload"
 
 export default function Home() {
-  const { notes, isLoading, addNote } = useNotes()
+  const { addNote } = useNotes()
   const [isRecordingModalOpen, setRecordingModalOpen] = useState(false)
   const [isUploadModalOpen, setUploadModalOpen] = useState(false)
   const [isWriteNoteModalOpen, setWriteNoteModalOpen] = useState(false)
@@ -41,69 +42,39 @@ export default function Home() {
     router.push(`/note/${newNote.id}`);
   }
 
-  const handleCloseWriteNewNoteModal = () => {
-    setRecordingModalOpen(false)
-  }
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.metaKey && e.shiftKey && (e.code === "Space" || e.key === " " || e.key === "Spacebar")) {
-        e.preventDefault()
-        handleOpenRecordingModal()
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [])
-
   return (
     <div className="flex flex-col h-full w-full min-h-0">
+      <main className="px-4 overflow-y-auto w-full max-w-4xl mx-auto min-h-0 overflow-hidden flex flex-col items-center justify-center h-full">
+        <h1></h1>
+        <div className="w-full max-w-2xl space-y-6">
+          {/* Image Upload Section */}
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold">Create Note from Images</h2>
+            <p className="text-muted-foreground text-sm">
+              Upload images and let AI analyze them to create comprehensive notes
+            </p>
+            <ImageUpload />
+          </div>
 
-      <div className="p-4 flex items-center justify-between w-full max-w-4xl mx-auto ">
-        <h1 className="text-2xl font-bold">My Notes</h1>
-        <Button onClick={handleCreateNewNote}>
-          <BookPlus className="size-4 mr-1" />
-          Write new note
-        </Button>
-      </div>
-
-      {!isLoading ? (
-        <main className="flex-1 px-4 overflow-y-auto w-full max-w-4xl mx-auto min-h-0 overflow-hidden">
-          {notes.length === 0 ? (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-muted-foreground">You don't have any notes yet. Start by creating a new one!</p>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {notes.map((note) => (
-                <li key={note.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <Link href={`/note/${note.id}`}>
-                    <h2 className="font-semibold">{note.title}</h2>
-                    <p className="text-sm text-muted-foreground">{note.preview}</p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </main>
-      ) : (
-        <ListSkeleton />
-      )}
-
-      <div className="flex-shrink-0 pt-6 pb-2 border-t bg-background w-full flex flex-col gap-2">
-        <div className="flex px-4 gap-3 w-full max-w-4xl mx-auto">
-          <Button size="lg" onClick={handleOpenRecordingModal} className="flex-1">
-            <Mic2 className="size-4 mr-1" />
-            Record new note
-          </Button>
-          <Button size="lg" onClick={handleOpenUploadModal} variant="secondary" className="flex-1">
-            <Upload className="size-4 mr-1" />
-            Upload audio file
-          </Button>
+          {/* Other Options */}
+          <div className="flex gap-4">
+            <Button size="lg" onClick={handleOpenRecordingModal} className="flex-1">
+              <Mic2 className="size-4 mr-1" />
+              Record new note
+            </Button>
+            <Button size="lg" onClick={handleOpenUploadModal} variant="secondary" className="flex-1">
+              <Upload className="size-4 mr-1" />
+              Upload audio file
+            </Button>
+            <Button size="lg" onClick={handleCreateNewNote} variant="outline" className="flex-1">
+              <BookPlus className="size-4 mr-1" />
+              Write new note
+            </Button>
+          </div>
         </div>
+      </main>
+
+      <div className="flex-shrink-0 pb-2 w-full flex flex-col gap-2 absolute bottom-0">
         <Footer />
       </div>
 
