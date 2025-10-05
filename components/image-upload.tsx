@@ -124,7 +124,7 @@ const getFilePreview = (file: {
 export default function ImageUpload() {
   const maxSizeMB = 25
   const maxSize = maxSizeMB * 1024 * 1024 // 25MB default
-  const maxFiles = 3
+  const maxFiles = 2
 
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingStatus, setProcessingStatus] = useState("")
@@ -187,63 +187,54 @@ export default function ImageUpload() {
       }))
       const imageData = await Promise.all(imageBase64Promises)
 
-      const result = await analyzeImages(imageFiles, {
-        onProgress: setProcessingStatus,
-        generateTitle: true,
-        customPrompt,
+      // Create initial note content with just images and a placeholder for analysis
+      const initialNoteContent = {
+        type: "doc",
+        content: [
+          // Add images at the top
+          ...imageData.map(image => ({
+            type: "image",
+            attrs: {
+              src: image.src,
+              alt: image.alt,
+              title: image.title
+            }
+          })),
+          // Add a separator paragraph
+          {
+            type: "paragraph",
+            content: []
+          },
+          // Add a placeholder paragraph for the analysis
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: "Analyzing images..."
+              }
+            ]
+          }
+        ]
+      }
+
+      // Create the note immediately with images and navigate
+      setProcessingStatus("Creating note...")
+      const newNote = await addNote({
+        title: "Image Analysis", // Temporary title
+        content: initialNoteContent
       })
 
-      if (result && result.title && result.analysis) {
-        console.log("Image analysis usage:", result.usage)
+      // Navigate to the note page immediately
+      const analysisParams = new URLSearchParams({
+        streamAnalysis: 'true',
+        customPrompt: customPrompt,
+        imageCount: imageFiles.length.toString()
+      })
 
-        toast.promise(
-          async () => {
-            // Create note content with images first, then analysis
-            const noteContent = {
-              type: "doc",
-              content: [
-                // Add images at the top
-                ...imageData.map(image => ({
-                  type: "image",
-                  attrs: {
-                    src: image.src,
-                    alt: image.alt,
-                    title: image.title
-                  }
-                })),
-                // Add a separator paragraph
-                {
-                  type: "paragraph",
-                  content: []
-                },
-                // Add the AI analysis
-                {
-                  type: "paragraph",
-                  content: [
-                    {
-                      type: "text",
-                      text: result.analysis
-                    }
-                  ]
-                }
-              ]
-            }
+      router.push(`/note/${newNote.id}?${analysisParams.toString()}`)
 
-            const newNote = await addNote({
-              title: result.title!,
-              content: noteContent
-            })
-            router.push(`/note/${newNote.id}`)
-          },
-          {
-            loading: "Saving note...",
-            success: "Note created successfully!",
-            error: "Failed to save note.",
-          }
-        )
-      } else {
-        toast.error("Title or analysis is empty. Cannot save note.")
-      }
+      toast.success("Note created! Analysis will stream in shortly...")
     } catch (err) {
       console.error("Error creating note from images:", err)
       // Error handling is already done in the image analysis hook

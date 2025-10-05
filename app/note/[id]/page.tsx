@@ -2,9 +2,10 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useNotes } from "@/app/hooks/useNotes"
+import { useImageAnalysis } from "@/app/hooks/useImageAnalysis"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { TransformDropdown } from "../components/transformation-panel"
@@ -12,6 +13,7 @@ import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core"
 import { streamText } from "ai"
 import { cn, generateTransformationPrompt, createContentFromText, appendTextToContent } from "@/lib/utils"
 import { CustomMarkdown } from "@/components/ui/markdown"
+import LoadingBars from "@/components/ui/loading-bars"
 import Footer from "@/components/footer"
 import { Trash2 } from "lucide-react"
 import { useDbLoading } from "@/app/pglite-wrapper"
@@ -42,7 +44,9 @@ const extractTextFromContent = (content: JSONContent): string => {
 
 export default function NotePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { updateNote, deleteNote, useNoteQuery } = useNotes()
+  const { analyzeImages } = useImageAnalysis()
   const params = useParams<{ id: string }>();
   const id = params.id as string;
   const { data: note, isLoading } = useNoteQuery(id)
@@ -55,6 +59,8 @@ export default function NotePage() {
   const [isTransformationPendingConfirmation, setIsTransformationPendingConfirmation] = useState(false)
   const [transformedText, setTransformedText] = useState("")
   const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true)
+  const [isAnalyzingImages, setIsAnalyzingImages] = useState(false)
+  const [analysisText, setAnalysisText] = useState("")
 
   const titleDebounceTimeout = useRef<NodeJS.Timeout | null>(null)
   const contentDebounceTimeout = useRef<NodeJS.Timeout | null>(null)
@@ -77,6 +83,143 @@ export default function NotePage() {
       }
     }
   }, [note, id])
+
+  // Handle streaming analysis from URL parameters
+  useEffect(() => {
+    const shouldStreamAnalysis = searchParams.get('streamAnalysis') === 'true'
+    const customPrompt = searchParams.get('customPrompt')
+    const imageCount = searchParams.get('imageCount')
+
+    if (shouldStreamAnalysis && note && customPrompt && !isAnalyzingImages) {
+      startImageAnalysis(customPrompt, parseInt(imageCount || '0'))
+    }
+  }, [note, searchParams, isAnalyzingImages])
+
+  const startImageAnalysis = async (customPrompt: string, imageCount: number) => {
+    if (!note) return
+
+    setIsAnalyzingImages(true)
+    setAnalysisText("")
+
+    try {
+      // Extract images from the note content
+      const imageNodes = note.content.content?.filter(node => node.type === 'image') || []
+
+      if (imageNodes.length === 0) {
+        toast.error("No images found in the note to analyze")
+        return
+      }
+
+      // Convert base64 images back to File objects for analysis
+      const imageFiles: File[] = []
+      for (const imageNode of imageNodes) {
+        if (imageNode.attrs?.src) {
+          try {
+            const response = await fetch(imageNode.attrs.src)
+            const blob = await response.blob()
+            const file = new File([blob], imageNode.attrs.alt || 'image.png', { type: blob.type })
+            imageFiles.push(file)
+          } catch (error) {
+            console.error('Error converting image for analysis:', error)
+          }
+        }
+      }
+
+      if (imageFiles.length === 0) {
+        toast.error("Could not process images for analysis")
+        return
+      }
+
+      // Start streaming analysis
+      const result = await analyzeImages(imageFiles, {
+        generateTitle: true,
+        customPrompt,
+        showToasts: false,
+        onProgress: (status) => {
+          // Progress is now shown via LoadingBars component
+          console.log(`Analysis progress: ${status}`)
+        }
+      })
+
+      if (result && result.analysis) {
+        // Update the note content with the analysis
+        const updatedContent = { ...note.content }
+        const placeholderIndex = updatedContent.content?.findIndex(
+          node => node.type === 'paragraph' &&
+            node.content?.[0]?.type === 'text' &&
+            node.content[0].text?.includes('Analyzing images')
+        )
+
+        if (placeholderIndex !== undefined && placeholderIndex >= 0 && updatedContent.content) {
+          // Replace the placeholder with the analysis
+          updatedContent.content[placeholderIndex] = {
+            type: 'paragraph',
+            content: [
+              {
+                type: 'text',
+                text: result.analysis
+              }
+            ]
+          }
+
+          setEditableContent(updatedContent)
+
+          // Update the note in the database
+          await updateNote({
+            id: note.id,
+            updates: {
+              content: updatedContent,
+              title: result.title || note.title
+            }
+          })
+
+          // Update the title if we got a new one
+          if (result.title) {
+            setEditableTitle(result.title)
+          }
+
+          toast.success("Image analysis completed!")
+        }
+      }
+    } catch (error) {
+      console.error('Error during image analysis:', error)
+      updateAnalysisPlaceholder("Failed to analyze images")
+      toast.error("Failed to analyze images")
+    } finally {
+      setIsAnalyzingImages(false)
+      // Clean up URL parameters
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('streamAnalysis')
+      newUrl.searchParams.delete('customPrompt')
+      newUrl.searchParams.delete('imageCount')
+      window.history.replaceState({}, '', newUrl.toString())
+    }
+  }
+
+  const updateAnalysisPlaceholder = (newText: string) => {
+    setEditableContent(prevContent => {
+      const updatedContent = { ...prevContent }
+      const placeholderIndex = updatedContent.content?.findIndex(
+        node => node.type === 'paragraph' &&
+          node.content?.[0]?.type === 'text' &&
+          node.content[0].text?.includes('Analyzing images')
+      )
+
+      if (placeholderIndex !== undefined && placeholderIndex >= 0 && updatedContent.content) {
+        updatedContent.content[placeholderIndex] = {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: newText
+            }
+          ]
+        }
+      }
+
+      return updatedContent
+    })
+  }
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value
@@ -314,7 +457,7 @@ export default function NotePage() {
                 <NoteSkeleton />
               ) : (
                 <div className="min-h-full relative">
-                  {isStreaming || isTransformationPendingConfirmation ? (
+                  {isStreaming || isTransformationPendingConfirmation || isAnalyzingImages ? (
                     <div
                       className={cn(
                         "whitespace-pre-line rounded p-2",
@@ -323,7 +466,22 @@ export default function NotePage() {
                         "border-2 border-primary-foreground bg-muted/10 animate-pulse",
                       )}
                     >
-                      <CustomMarkdown>{transformedText}</CustomMarkdown>
+                      {isAnalyzingImages ? (
+                        <div className="space-y-4">
+                          <TailwindAdvancedEditor
+                            key={id}
+                            content={editableContent}
+                            onUpdate={handleContentChange}
+                            onEditorCreate={handleEditorCreate}
+                          />
+                          <LoadingBars
+                            lines={4}
+                            className="border-t pt-4"
+                          />
+                        </div>
+                      ) : (
+                        <CustomMarkdown>{transformedText}</CustomMarkdown>
+                      )}
                     </div>
                   ) : (
                     <TailwindAdvancedEditor
