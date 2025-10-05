@@ -73,7 +73,7 @@ const TailwindAdvancedEditor = ({ content, onUpdate, onEditorCreate }: TailwindA
           immediatelyRender={false}
           initialContent={content}
           extensions={extensions}
-          className="w-full min-h-[400px] p-2"
+          className="w-full p-2"
           editorProps={{
             handleDOMEvents: {
               keydown: (_view, event) => handleCommandNavigation(event),

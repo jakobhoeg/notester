@@ -476,7 +476,6 @@ export default function NotePage() {
                           />
                           <LoadingBars
                             lines={4}
-                            className="border-t pt-4"
                           />
                         </div>
                       ) : (
