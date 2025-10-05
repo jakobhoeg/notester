@@ -39,7 +39,7 @@ const TailwindAdvancedEditor = ({ content, onUpdate, onEditorCreate }: TailwindA
     onUpdate(json);
     setCharsCount(editor.storage.characterCount?.words() || 0);
     setSaveStatus("Saved");
-  }, 500);
+  }, 1000);
 
   // Effect to update editor content when content prop changes (only for initial load)
   useEffect(() => {
