@@ -11,16 +11,11 @@ import React, { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useNotes } from "@/app/hooks/useNotes";
-import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core";
-import { generateText } from "ai";
 import { Upload } from "lucide-react";
-import { Loader } from "./ai-elements/loader";
 
 export function UploadModal({ onClose }: { onClose: () => void }) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [processingStatus, setProcessingStatus] = useState("");
   const { addNote } = useNotes();
-
   const [isDragActive, setIsDragActive] = useState(false);
   const router = useRouter();
 
@@ -28,98 +23,67 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
     async (acceptedFiles: File[]) => {
       const file = acceptedFiles[0];
       if (!file) {
-        toast.error(
-          "Bad file selected. Please make sure to select an audio file."
-        );
+        toast.error("Please select an audio file.");
         return;
       }
+
       setIsProcessing(true);
       try {
-        if (!doesBrowserSupportBuiltInAI()) {
-          toast.error("Your browser does not support built-in AI.");
-          return;
-        }
-
-        const model = builtInAI();
-        const availability = await model.availability();
-
-        if (availability === "unavailable") {
-          toast.error("Built-in AI is not available on your device.");
-          return;
-        }
-
-        if (availability === "downloadable") {
-          setProcessingStatus("Downloading model...");
-          await model.createSessionWithProgress((progress) => {
-            setProcessingStatus(
-              `Downloading model... ${Math.round(progress * 100)}%`
-            );
-          });
-        }
-
-        setProcessingStatus("Transcribing audio...");
-        const audioData = new Uint8Array(await file.arrayBuffer());
-
-        const { text: transcription } = await generateText({
-          model: model,
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: "Transcribe the following audio" },
-                { type: "file", mediaType: file.type, data: audioData },
-              ],
-            },
-          ],
+        // Convert audio file to base64 for embedding
+        const reader = new FileReader();
+        const audioBase64 = await new Promise<string>((resolve) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
         });
 
-        setProcessingStatus("Generating title...");
-        const { text: title } = await generateText({
-          model: model,
-          prompt: `Generate a title for the following transcription with a max of 10 words or 80 characters: 
-        ${transcription}
-        
-        Only return the title, nothing else, no explanation, and no quotes or follow-up.
-        `,
+        // Create note with audio and placeholder
+        const newNote = await addNote({
+          title: "Audio Upload",
+          content: {
+            type: "doc",
+            content: [
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: `[Audio: ${file.name}]`
+                  }
+                ]
+              },
+              {
+                type: "paragraph",
+                content: []
+              },
+              {
+                type: "paragraph",
+                content: [
+                  {
+                    type: "text",
+                    text: "Transcribing audio..."
+                  }
+                ]
+              }
+            ]
+          }
         });
 
-        if (title.trim() && transcription.trim()) {
-          toast.promise(
-            async () => {
-              const newNote = await addNote({
-                title,
-                content: {
-                  type: "doc",
-                  content: [
-                    {
-                      type: "paragraph",
-                      content: [
-                        {
-                          type: "text",
-                          text: transcription
-                        }
-                      ]
-                    }
-                  ]
-                }
-              });
-              router.push(`/note/${newNote.id}`);
-            },
-            {
-              loading: "Saving note...",
-              success: "Note saved!",
-              error: "Failed to save note.",
-            }
-          );
-        } else {
-          toast.error("Title or transcription is empty. Cannot save note.");
-        }
+        // Store audio in localStorage temporarily
+        localStorage.setItem(`audio_${newNote.id}`, audioBase64);
+
+        // Navigate immediately with transcription params
+        const params = new URLSearchParams({
+          streamTranscription: 'true'
+        });
+
+        router.push(`/note/${newNote.id}?${params.toString()}`);
+        toast.success("Note created! Transcription will stream in shortly...");
+        onClose();
       } catch (err) {
         console.error(err);
-        toast.error("Failed to transcribe audio. Please try again.");
+        toast.error("Failed to create note.");
       } finally {
         setIsProcessing(false);
-        onClose();
       }
     },
     [addNote, router, onClose]
@@ -136,11 +100,10 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
         </DialogHeader>
 
         {isProcessing ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
-            <p className="text-gray-500 flex items-center">
-              <Loader className="size-4 mr-1" />
-              {processingStatus}
-              <span className="animate-pulse">...</span>
+          <div className="flex flex-col items-center justify-center h-full gap-4 p-4 min-h-[200px]">
+            <p className="text-muted-foreground flex items-center text-sm">
+              <div className="size-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Creating note...
             </p>
           </div>
         ) : (

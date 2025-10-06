@@ -22,7 +22,6 @@ import {
   useFileUpload,
 } from "@/hooks/use-file-upload"
 import { Button } from "@/components/ui/button"
-import { useImageAnalysis } from "@/app/hooks/useImageAnalysis"
 import { useNotes } from "@/app/hooks/useNotes"
 import {
   PromptInput,
@@ -130,7 +129,6 @@ export default function ImageUpload() {
   const [processingStatus, setProcessingStatus] = useState("")
 
   const router = useRouter()
-  const { analyzeImages, isAnalyzing } = useImageAnalysis()
   const { addNote } = useNotes()
 
   const [
@@ -174,10 +172,6 @@ export default function ImageUpload() {
     setIsProcessing(true)
 
     try {
-      const customPrompt = message.text?.trim()
-        ? `${message.text.trim()}\n\nPlease analyze these images and create comprehensive notes based on the above request.`
-        : "Analyze these images and create comprehensive notes about what you see. Include details about objects, people, text, settings, and any other relevant information that would be useful for note-taking."
-
       // Convert images to base64 for embedding in the note
       setProcessingStatus("Processing images...")
       const imageBase64Promises = imageFiles.map(async (file) => ({
@@ -228,9 +222,13 @@ export default function ImageUpload() {
       // Navigate to the note page immediately
       const analysisParams = new URLSearchParams({
         streamAnalysis: 'true',
-        customPrompt: customPrompt,
         imageCount: imageFiles.length.toString()
       })
+
+      // Only add custom prompt if user provided one
+      if (message.text?.trim()) {
+        analysisParams.set('customPrompt', message.text.trim())
+      }
 
       router.push(`/note/${newNote.id}?${analysisParams.toString()}`)
 
@@ -343,7 +341,7 @@ export default function ImageUpload() {
       )}
 
       {/* Processing status */}
-      {(isProcessing || isAnalyzing) && (
+      {isProcessing && (
         <div className="text-muted-foreground flex items-center gap-2 text-sm">
           <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
           <span>{processingStatus || "Processing..."}</span>
@@ -370,15 +368,15 @@ export default function ImageUpload() {
             </PromptInputAttachments>
             <PromptInputTextarea
               placeholder="Describe what you'd like me to focus on in these images, or leave blank for a general analysis..."
-              disabled={isProcessing || isAnalyzing}
+              disabled={isProcessing}
             />
             <PromptInputToolbar>
               <div />
               <PromptInputSubmit
-                disabled={isProcessing || isAnalyzing}
-                status={isProcessing || isAnalyzing ? "submitted" : "ready"}
+                disabled={isProcessing}
+                status={isProcessing ? "submitted" : "ready"}
               >
-                {isProcessing || isAnalyzing ? "Creating Note..." : "Create Note"}
+                {isProcessing ? "Creating Note..." : "Create Note"}
               </PromptInputSubmit>
             </PromptInputToolbar>
           </PromptInputBody>

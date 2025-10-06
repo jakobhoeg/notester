@@ -13,10 +13,8 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAudioRecording } from "@/app/hooks/useAudioRecording";
 import { useNotes } from "@/app/hooks/useNotes";
-import { useTranscription } from "@/app/hooks/useTranscription";
 import { AudioWaveform } from "./ui/audio-wave";
 import { Mic2, Pause, StopCircle, X } from "lucide-react";
-import { Loader } from "./ai-elements/loader";
 
 interface RecordingModalProps {
   onClose: () => void;
@@ -37,12 +35,9 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
     resetRecording,
   } = useAudioRecording();
   const { addNote } = useNotes();
-  const { transcribeAudio } = useTranscription();
   const router = useRouter();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [pendingSave, setPendingSave] = useState(false);
-  const [processingStatus, setProcessingStatus] = useState("");
   const [shouldSaveOnStop, setShouldSaveOnStop] = useState(false);
 
   const formatTime = (seconds: number) => {
@@ -59,59 +54,63 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
 
     setIsProcessing(true);
     try {
-      const result = await transcribeAudio(audioBlob, {
-        onProgress: setProcessingStatus,
-        generateTitle: true,
+      // Convert audio blob to base64 for embedding in note
+      const reader = new FileReader();
+      const audioBase64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(audioBlob);
       });
 
-      if (result && result.title && result.transcription) {
-        console.log(result.usage);
+      // Create note with audio and placeholder text
+      const newNote = await addNote({
+        title: "Voice Recording",
+        content: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: `[Audio: ${audioBlob.type}]`
+                }
+              ]
+            },
+            {
+              type: "paragraph",
+              content: []
+            },
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "Transcribing audio..."
+                }
+              ]
+            }
+          ]
+        }
+      });
 
-        toast.promise(
-          async () => {
-            const newNote = await addNote({
-              title: result.title!,
-              content: {
-                type: "doc",
-                content: [
-                  {
-                    type: "paragraph",
-                    content: [
-                      {
-                        type: "text",
-                        text: result.transcription
-                      }
-                    ]
-                  }
-                ]
-              }
-            });
-            router.push(`/note/${newNote.id}`);
-          },
-          {
-            loading: "Saving note...",
-            success: "Note saved!",
-            error: "Failed to save note.",
-          }
-        );
-      } else {
-        toast.error("Title or transcription is empty. Cannot save note.");
-      }
+      // Store audio in localStorage temporarily for the note page to access
+      localStorage.setItem(`audio_${newNote.id}`, audioBase64);
+
+      // Navigate immediately with transcription params
+      const params = new URLSearchParams({
+        streamTranscription: 'true'
+      });
+
+      router.push(`/note/${newNote.id}?${params.toString()}`);
+      toast.success("Note created! Transcription will stream in shortly...");
+      onClose();
     } catch (err) {
       console.error(err);
-      // Error handling is already done in the transcription hook
+      toast.error("Failed to create note.");
     } finally {
       setIsProcessing(false);
-      onClose();
     }
   };
-
-  useEffect(() => {
-    if (pendingSave && audioBlob) {
-      setPendingSave(false);
-      handleSaveRecording();
-    }
-  }, [pendingSave, audioBlob]);
 
   // Handle auto-save when recording stops and audioBlob becomes available
   useEffect(() => {
@@ -132,11 +131,10 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
         </DialogHeader>
 
         {isProcessing ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
-            <p className="text-gray-500 flex items-center">
-              <Loader className="size-4 mr-1" />
-              {processingStatus}
-              <span className="animate-pulse">...</span>
+          <div className="flex flex-col items-center justify-center h-full gap-4 p-4 min-h-[200px]">
+            <p className="text-muted-foreground flex items-center text-sm">
+              <div className="size-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Creating note...
             </p>
           </div>
         ) : (

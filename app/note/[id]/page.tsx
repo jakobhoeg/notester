@@ -6,6 +6,7 @@ import { useRouter, useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useNotes } from "@/app/hooks/useNotes"
 import { useImageAnalysis } from "@/app/hooks/useImageAnalysis"
+import { useTranscription } from "@/app/hooks/useTranscription"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { TransformDropdown } from "../components/transformation-panel"
@@ -47,6 +48,7 @@ export default function NotePage() {
   const searchParams = useSearchParams()
   const { updateNote, deleteNote, useNoteQuery } = useNotes()
   const { analyzeImages } = useImageAnalysis()
+  const { transcribeAudio } = useTranscription()
   const params = useParams<{ id: string }>();
   const id = params.id as string;
   const { data: note, isLoading } = useNoteQuery(id)
@@ -61,10 +63,12 @@ export default function NotePage() {
   const [isAutocompleteEnabled, setIsAutocompleteEnabled] = useState(true)
   const [isAnalyzingImages, setIsAnalyzingImages] = useState(false)
   const [analysisText, setAnalysisText] = useState("")
+  const [isTranscribing, setIsTranscribing] = useState(false)
 
   const titleDebounceTimeout = useRef<NodeJS.Timeout | null>(null)
   const contentDebounceTimeout = useRef<NodeJS.Timeout | null>(null)
   const editorRef = useRef<EditorInstance | null>(null)
+  const hasStartedTranscription = useRef(false)
 
   useEffect(() => {
     if (note) {
@@ -87,15 +91,15 @@ export default function NotePage() {
   // Handle streaming analysis from URL parameters
   useEffect(() => {
     const shouldStreamAnalysis = searchParams.get('streamAnalysis') === 'true'
-    const customPrompt = searchParams.get('customPrompt')
+    const customPrompt = searchParams.get('customPrompt') || undefined
     const imageCount = searchParams.get('imageCount')
 
-    if (shouldStreamAnalysis && note && customPrompt && !isAnalyzingImages) {
+    if (shouldStreamAnalysis && note && !isAnalyzingImages) {
       startImageAnalysis(customPrompt, parseInt(imageCount || '0'))
     }
   }, [note, searchParams, isAnalyzingImages])
 
-  const startImageAnalysis = async (customPrompt: string, imageCount: number) => {
+  const startImageAnalysis = async (customPrompt: string | undefined, imageCount: number) => {
     if (!note) return
 
     setIsAnalyzingImages(true)
@@ -131,9 +135,10 @@ export default function NotePage() {
       }
 
       // Start streaming analysis
+      // Only pass customPrompt if user provided one, otherwise use default from hook
       const result = await analyzeImages(imageFiles, {
         generateTitle: true,
-        customPrompt,
+        ...(customPrompt && { customPrompt }),
         showToasts: false,
         onProgress: (status) => {
           // Progress is now shown via LoadingBars component
@@ -219,6 +224,98 @@ export default function NotePage() {
 
       return updatedContent
     })
+  }
+
+  // Handle streaming transcription from URL parameters
+  useEffect(() => {
+    const shouldStreamTranscription = searchParams.get('streamTranscription') === 'true'
+
+    if (shouldStreamTranscription && note && !hasStartedTranscription.current) {
+      hasStartedTranscription.current = true
+      startAudioTranscription()
+    }
+  }, [note, searchParams])
+
+  const startAudioTranscription = async () => {
+    if (!note) return
+
+    setIsTranscribing(true)
+
+    try {
+      // Retrieve audio from localStorage
+      const audioBase64 = localStorage.getItem(`audio_${note.id}`)
+
+      if (!audioBase64) {
+        toast.error("No audio found to transcribe")
+        return
+      }
+
+      // Convert base64 back to Blob
+      const response = await fetch(audioBase64)
+      const audioBlob = await response.blob()
+
+      // Transcribe the audio
+      const result = await transcribeAudio(audioBlob, {
+        generateTitle: true,
+        showToasts: false,
+        onProgress: (status) => {
+          console.log(`Transcription progress: ${status}`)
+        }
+      })
+
+      if (result && result.transcription) {
+        // Update the note content with transcription
+        const updatedContent = { ...note.content }
+        const placeholderIndex = updatedContent.content?.findIndex(
+          node => node.type === 'paragraph' &&
+            node.content?.[0]?.type === 'text' &&
+            node.content[0].text?.includes('Transcribing audio')
+        )
+
+        if (placeholderIndex !== undefined && placeholderIndex >= 0 && updatedContent.content) {
+          // Replace placeholder with transcription
+          updatedContent.content[placeholderIndex] = {
+            type: 'paragraph',
+            content: [
+              {
+                type: 'text',
+                text: result.transcription
+              }
+            ]
+          }
+
+          setEditableContent(updatedContent)
+
+          // Update the note in database
+          await updateNote({
+            id: note.id,
+            updates: {
+              content: updatedContent,
+              title: result.title || note.title
+            }
+          })
+
+          if (result.title) {
+            setEditableTitle(result.title)
+          }
+
+          toast.success("Transcription completed!")
+        }
+      }
+
+      // Clean up localStorage and URL params
+      localStorage.removeItem(`audio_${note.id}`)
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('streamTranscription')
+      window.history.replaceState({}, '', newUrl.toString())
+      hasStartedTranscription.current = false
+    } catch (error) {
+      console.error('Error during transcription:', error)
+      toast.error("Failed to transcribe audio")
+      hasStartedTranscription.current = false
+    } finally {
+      setIsTranscribing(false)
+    }
   }
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -457,7 +554,7 @@ export default function NotePage() {
                 <NoteSkeleton />
               ) : (
                 <div className="min-h-full relative">
-                  {isStreaming || isTransformationPendingConfirmation || isAnalyzingImages ? (
+                  {isStreaming || isTransformationPendingConfirmation || isAnalyzingImages || isTranscribing ? (
                     <div
                       className={cn(
                         "whitespace-pre-line rounded p-2",
@@ -466,7 +563,7 @@ export default function NotePage() {
                         "border-2 border-primary-foreground bg-muted/10 animate-pulse",
                       )}
                     >
-                      {isAnalyzingImages ? (
+                      {isAnalyzingImages || isTranscribing ? (
                         <div className="space-y-4">
                           <TailwindAdvancedEditor
                             key={id}
