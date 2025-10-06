@@ -29,7 +29,7 @@ export function useImageAnalysis() {
       onProgress,
       generateTitle = true,
       showToasts = true,
-      customPrompt = "Analyze these images and create comprehensive notes about what you see. Include details about objects, people, text, settings, and any other relevant information that would be useful for note-taking."
+      customPrompt = "Analyze the image(s) and write a short note about it. Only include relevant information. If the image is text-based, only return the text and nothing else."
     } = options;
 
     setIsAnalyzing(true);
