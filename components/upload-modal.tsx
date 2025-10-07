@@ -151,7 +151,14 @@ export function UploadModal({ open, onOpenChange, children }: { open: boolean; o
                   <p className="text-muted-foreground text-xs">
                     Up to {maxSizeMB}MB ∙ MP3, WAV, or M4A
                   </p>
-                  <Button variant="outline" className="mt-4" onClick={open}>
+                  <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      open();
+                    }}
+                  >
                     <UploadIcon className="-ms-1 opacity-60" aria-hidden="true" />
                     Select audio
                   </Button>
