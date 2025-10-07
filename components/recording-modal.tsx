@@ -3,11 +3,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Popover,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -17,11 +15,13 @@ import { AudioWaveform } from "./ui/audio-wave";
 import { Mic2, Pause, StopCircle, X } from "lucide-react";
 
 interface RecordingModalProps {
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   title?: string;
+  children: React.ReactNode;
 }
 
-export function RecordingModal({ onClose }: RecordingModalProps) {
+export function RecordingModal({ open, onOpenChange, children }: RecordingModalProps) {
   const {
     recording,
     paused,
@@ -103,7 +103,7 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
 
       router.push(`/note/${newNote.id}?${params.toString()}`);
       toast.success("Note created! Transcription will stream in shortly...");
-      onClose();
+      onOpenChange(false);
     } catch (err) {
       console.error(err);
       toast.error("Failed to create note.");
@@ -121,15 +121,13 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
   }, [shouldSaveOnStop, audioBlob, recording]);
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent
-        showCloseButton={false}
-        className="!max-w-[392px] !p-0 rounded-tl-xl rounded-tr-xloverflow-hidden gap-0"
+    <Popover open={open} onOpenChange={onOpenChange}>
+      {children}
+      <PopoverContent
+        className="w-[392px] p-0 rounded-xl overflow-hidden"
+        align="center"
+        sideOffset={8}
       >
-        <DialogHeader className="p-0">
-          <DialogTitle className="sr-only">Recording Modal</DialogTitle>
-        </DialogHeader>
-
         {isProcessing ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 p-4 min-h-[200px]">
             <p className="text-muted-foreground flex items-center text-sm">
@@ -211,7 +209,7 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
             </Button>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   );
 }

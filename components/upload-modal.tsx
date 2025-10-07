@@ -1,11 +1,9 @@
 "use client";
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Popover,
+  PopoverContent,
+} from "@/components/ui/popover";
 import Dropzone from "react-dropzone";
 import React, { useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -13,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { useNotes } from "@/app/hooks/useNotes";
 import { Upload } from "lucide-react";
 
-export function UploadModal({ onClose }: { onClose: () => void }) {
+export function UploadModal({ open, onOpenChange, children }: { open: boolean; onOpenChange: (open: boolean) => void; children: React.ReactNode }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const { addNote } = useNotes();
   const [isDragActive, setIsDragActive] = useState(false);
@@ -78,7 +76,7 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
 
         router.push(`/note/${newNote.id}?${params.toString()}`);
         toast.success("Note created! Transcription will stream in shortly...");
-        onClose();
+        onOpenChange(false);
       } catch (err) {
         console.error(err);
         toast.error("Failed to create note.");
@@ -86,19 +84,17 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
         setIsProcessing(false);
       }
     },
-    [addNote, router, onClose]
+    [addNote, router, onOpenChange]
   );
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent
-        showCloseButton={false}
-        className="!max-w-[392px] !p-0 border border-gray-200 rounded-tl-xl rounded-tr-x overflow-hidden gap-0"
+    <Popover open={open} onOpenChange={onOpenChange}>
+      {children}
+      <PopoverContent
+        className="w-[392px] p-0 rounded-xl overflow-hidden"
+        align="center"
+        sideOffset={8}
       >
-        <DialogHeader className="p-0">
-          <DialogTitle className="sr-only">Upload Voice Audio</DialogTitle>
-        </DialogHeader>
-
         {isProcessing ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 p-4 min-h-[200px]">
             <p className="text-muted-foreground flex items-center text-sm">
@@ -164,7 +160,7 @@ export function UploadModal({ onClose }: { onClose: () => void }) {
             </Dropzone>
           </>
         )}
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   );
 }
