@@ -9,7 +9,8 @@ import React, { useCallback, useState } from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useNotes } from "@/app/hooks/useNotes";
-import { Upload } from "lucide-react";
+import { HeadphonesIcon, UploadIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function UploadModal({ open, onOpenChange, children }: { open: boolean; onOpenChange: (open: boolean) => void; children: React.ReactNode }) {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -87,78 +88,77 @@ export function UploadModal({ open, onOpenChange, children }: { open: boolean; o
     [addNote, router, onOpenChange]
   );
 
+  const maxSizeMB = 25;
+
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       {children}
       <PopoverContent
-        className="w-[392px] p-0 rounded-xl overflow-hidden"
+        className="w-[400px] p-4 rounded-xl"
         align="center"
         sideOffset={8}
       >
         {isProcessing ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 p-4 min-h-[200px]">
+          <div className="flex flex-col items-center justify-center gap-4 min-h-52">
             <p className="text-muted-foreground flex items-center text-sm">
               <div className="size-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
               Creating note...
             </p>
           </div>
         ) : (
-          <>
-            <div className="p-4 text-center">
-              <h2 className="text-lg font-semibold">Upload a new recording</h2>
-            </div>
-            <Dropzone
-              multiple={false}
-              accept={{
-                // MP3 audio
-                "audio/mpeg3": [".mp3"],
-                "audio/x-mpeg-3": [".mp3"],
-                // WAV audio
-                "audio/wav": [".wav"],
-                "audio/x-wav": [".wav"],
-                "audio/wave": [".wav"],
-                "audio/x-pn-wav": [".wav"],
-                // iPhone voice notes (M4A)
-                "audio/mp4": [".m4a"],
-                "audio/m4a": [".m4a"],
-                "audio/x-m4a": [".m4a"],
-              }}
-              onDrop={handleDrop}
-              onDragEnter={() => setIsDragActive(true)}
-              onDragLeave={() => setIsDragActive(false)}
-              onDropAccepted={() => setIsDragActive(false)}
-              onDropRejected={() => setIsDragActive(false)}
-            >
-              {({ getRootProps, getInputProps }) => (
-                <div
-                  {...getRootProps()}
-                  className="flex flex-col justify-start items-start relative overflow-hidden cursor-pointer"
-                >
-                  <input {...getInputProps()} />
-                  <div className="relativ p-5 w-full">
-                    <div className="relative overflow-hidden rounded-xl border-2 border-dashed min-h-[86px] flex justify-center items-center flex-col gap-1">
-                      <div className="flex justify-center items-center relative gap-2.5 px-3 py-2 rounded-lg ">
-                        <Upload className="size-4 " />
-                        <p className="text-base font-semibold text-left">
-                          Upload a recording
-                        </p>
-                      </div>
-                      <p className="text-xs text-center text-[#4a5565]">
-                        Or drag‑and‑drop here
-                      </p>
-                      {isDragActive && (
-                        <div className="absolute inset-0 bg-opacity-50 flex items-center justify-center z-10 pointer-events-none">
-                          <span className="text-blue-300 font-semibold">
-                            Drop audio file here
-                          </span>
-                        </div>
-                      )}
-                    </div>
+          <Dropzone
+            multiple={false}
+            accept={{
+              // MP3 audio
+              "audio/mpeg3": [".mp3"],
+              "audio/x-mpeg-3": [".mp3"],
+              // WAV audio
+              "audio/wav": [".wav"],
+              "audio/x-wav": [".wav"],
+              "audio/wave": [".wav"],
+              "audio/x-pn-wav": [".wav"],
+              // iPhone voice notes (M4A)
+              "audio/mp4": [".m4a"],
+              "audio/m4a": [".m4a"],
+              "audio/x-m4a": [".m4a"],
+            }}
+            onDrop={handleDrop}
+            onDragEnter={() => setIsDragActive(true)}
+            onDragLeave={() => setIsDragActive(false)}
+            onDropAccepted={() => setIsDragActive(false)}
+            onDropRejected={() => setIsDragActive(false)}
+          >
+            {({ getRootProps, getInputProps, open }) => (
+              <div
+                {...getRootProps()}
+                data-dragging={isDragActive || undefined}
+                className="border-input data-[dragging=true]:bg-accent/50 has-[input:focus]:border-ring has-[input:focus]:ring-ring/50 relative flex min-h-52 flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed p-4 transition-colors has-[input:focus]:ring-[3px]"
+              >
+                <input
+                  {...getInputProps()}
+                  className="sr-only"
+                  aria-label="Upload audio file"
+                  tabIndex={-1}
+                />
+                <div className="flex flex-col items-center justify-center px-4 py-3 text-center">
+                  <div
+                    className="bg-background mb-2 flex size-11 shrink-0 items-center justify-center rounded-full border"
+                    aria-hidden="true"
+                  >
+                    <HeadphonesIcon className="size-4 opacity-60" />
                   </div>
+                  <p className="mb-1.5 text-sm font-medium">Drop your audio file here</p>
+                  <p className="text-muted-foreground text-xs">
+                    Up to {maxSizeMB}MB ∙ MP3, WAV, or M4A
+                  </p>
+                  <Button variant="outline" className="mt-4" onClick={open}>
+                    <UploadIcon className="-ms-1 opacity-60" aria-hidden="true" />
+                    Select audio
+                  </Button>
                 </div>
-              )}
-            </Dropzone>
-          </>
+              </div>
+            )}
+          </Dropzone>
         )}
       </PopoverContent>
     </Popover>

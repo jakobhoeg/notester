@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { useAudioRecording } from "@/app/hooks/useAudioRecording";
 import { useNotes } from "@/app/hooks/useNotes";
 import { AudioWaveform } from "./ui/audio-wave";
-import { Mic2, Pause, StopCircle, X } from "lucide-react";
+import { Mic2, Pause, Play, StopCircle, X } from "lucide-react";
 
 interface RecordingModalProps {
   open: boolean;
@@ -112,6 +112,20 @@ export function RecordingModal({ open, onOpenChange, children }: RecordingModalP
     }
   };
 
+  // Auto-start recording when modal opens
+  useEffect(() => {
+    if (open && !recording && !audioBlob) {
+      startRecording();
+    }
+  }, [open]);
+
+  // Stop recording when modal closes
+  useEffect(() => {
+    if (!open && recording) {
+      stopRecording();
+    }
+  }, [open, recording]);
+
   // Handle auto-save when recording stops and audioBlob becomes available
   useEffect(() => {
     if (shouldSaveOnStop && audioBlob && !recording) {
@@ -137,75 +151,62 @@ export function RecordingModal({ open, onOpenChange, children }: RecordingModalP
           </div>
         ) : (
           <div className="flex flex-col items-center w-full">
-            {!recording ? (
-              <div className="p-4">
-                <h2 className="text-lg font-semibold">Start a new recording</h2>
+            <div className="flex flex-row gap-8 mt-8">
+              <Button
+                variant='destructive'
+                className="size-10 rounded-xl"
+                onClick={() => {
+                  resetRecording();
+                  startRecording();
+                }}
+                type="button"
+                aria-label="Reset recording"
+              >
+                <X className="size-4" />
+              </Button>
+
+              <div className="flex flex-col gap-1">
+                <p className="text-base text-center">
+                  {formatTime(duration)}
+                </p>
+                <AudioWaveform analyserNode={analyserNode} isPaused={paused} />
               </div>
-            ) : (
-              <div className="flex flex-row gap-8 mt-8">
+
+              {paused ? (
                 <Button
-                  variant='destructive'
-                  className="size-10 rounded-xl"
-                  onClick={resetRecording}
+                  className="size-10 p-2.5 rounded-xl cursor-pointer"
+                  onClick={resumeRecording}
+                  variant="secondary"
                   type="button"
-                  aria-label="Reset recording"
+                  aria-label="Resume recording"
                 >
-                  <X className="size-4" />
+                  <Play className="size-4" />
                 </Button>
-
-                <div className="flex flex-col gap-1">
-                  <p className="text-base text-center">
-                    {formatTime(duration)}
-                  </p>
-                  <AudioWaveform analyserNode={analyserNode} isPaused={paused} />
-                </div>
-
-                {paused ? (
-                  <Button
-                    className="size-10 p-2.5 rounded-xl cursor-pointer"
-                    onClick={resumeRecording}
-                    variant="secondary"
-                    type="button"
-                    aria-label="Resume recording"
-                  >
-                    <Mic2 className="size-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    className="size-10 p-2.5 rounded-xl cursor-pointer"
-                    variant="secondary"
-                    onClick={pauseRecording}
-                    type="button"
-                    aria-label="Pause recording"
-                  >
-                    <Pause className="size-4" />
-                  </Button>
-                )}
-              </div>
-            )}
+              ) : (
+                <Button
+                  className="size-10 p-2.5 rounded-xl cursor-pointer"
+                  variant="secondary"
+                  onClick={pauseRecording}
+                  type="button"
+                  aria-label="Pause recording"
+                >
+                  <Pause className="size-4" />
+                </Button>
+              )}
+            </div>
 
             <Button
               className={cn(
-                "w-2/3 h-12 rounded-xl flex flex-row gap-3 items-center justify-center mb-5"
+                "w-1/2 h-12 rounded-xl flex flex-row gap-3 items-center justify-center mb-5 mt-4"
               )}
               onClick={() => {
-                if (recording) {
-                  stopRecording();
-                  setShouldSaveOnStop(true);
-                } else {
-                  startRecording();
-                }
+                stopRecording();
+                setShouldSaveOnStop(true);
               }}
               disabled={isProcessing}
             >
-              {recording ? (
-                <>
-                  <StopCircle className="size-5" />
-                  <p>Stop Recording</p>
-                </>
-              ) : (
-                <Mic2 className="size-5" />
-              )}
+              <StopCircle className="size-5" />
+              <p>Create note</p>
             </Button>
           </div>
         )}
