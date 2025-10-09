@@ -126,6 +126,12 @@ export const useNotes = () => {
       queryKey: ["note", id],
       queryFn: async () => {
         if (!db || !isDbReady || !id) return undefined;
+
+        // Minimum loading duration to avoid flicker: 100ms show-delay + 300ms minimum visible time
+        const startTime = Date.now();
+        const minLoadingDuration = 100;
+        const minVisibleDuration = 300;
+
         const result = await db.query<{
           id: string;
           title: string;
@@ -142,7 +148,7 @@ export const useNotes = () => {
         const note = result.rows[0];
         if (!note) return undefined;
 
-        return {
+        const processedNote = {
           ...note,
           content: (() => {
             try {
@@ -164,6 +170,16 @@ export const useNotes = () => {
             }
           })()
         };
+
+        // Ensure minimum loading duration to prevent flicker
+        const elapsed = Date.now() - startTime;
+        const totalMinDuration = minLoadingDuration + minVisibleDuration;
+
+        if (elapsed < totalMinDuration) {
+          await new Promise(resolve => setTimeout(resolve, totalMinDuration - elapsed));
+        }
+
+        return processedNote;
       },
       enabled: !!db && !!id && isDbReady,
       refetchOnMount: true,
