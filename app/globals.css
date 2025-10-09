@@ -50,6 +50,9 @@
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+  --loading-start: #eff6ff;
+  --loading-mid: #2563eb60;
+  --loading-end: #eff6ff;
 }
 
 .dark {
@@ -97,6 +100,9 @@
   --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
   --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  --loading-start: #172554;
+  --loading-mid: #4c9dff60;
+  --loading-end: #172554;
 }
 
 @theme inline {
@@ -246,4 +252,40 @@
       opacity: 0.3;
     }
   }
+
+  /* This keyframe will create the initial slide animation  */
+  @keyframes expanding {
+    0% {
+      transform: scaleX(0);
+      opacity: 0;
+    }
+
+    100% {
+      transform: scaleX(1);
+      opacity: 1;
+    }
+  }
+
+  /* This keyframe will create the loading gradient effect */
+  @keyframes moving {
+    0% {
+      background-position: 0 0;
+    }
+
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  .loading-bar {
+    height: 1.25rem;
+    transform-origin: left;
+    animation: expanding 0.4s 0.7s forwards linear, moving 1s 1s infinite forwards linear;
+    border-radius: 0.125rem;
+    background-image: linear-gradient(to right, var(--loading-start) 30%, var(--loading-mid) 60%, var(--loading-end));
+    background-size: 200% auto;
+    opacity: 0;
+    animation-delay: 100ms;
+  }
+
 }

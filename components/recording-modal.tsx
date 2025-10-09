@@ -3,27 +3,25 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  Popover,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAudioRecording } from "@/app/hooks/useAudioRecording";
 import { useNotes } from "@/app/hooks/useNotes";
-import { useTranscription } from "@/app/hooks/useTranscription";
 import { AudioWaveform } from "./ui/audio-wave";
-import { Mic2, Pause, StopCircle, X } from "lucide-react";
-import { Loader } from "./ai-elements/loader";
+import { Mic2, Pause, Play, StopCircle, X } from "lucide-react";
 
 interface RecordingModalProps {
-  onClose: () => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   title?: string;
+  children: React.ReactNode;
 }
 
-export function RecordingModal({ onClose }: RecordingModalProps) {
+export function RecordingModal({ open, onOpenChange, children }: RecordingModalProps) {
   const {
     recording,
     paused,
@@ -37,12 +35,9 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
     resetRecording,
   } = useAudioRecording();
   const { addNote } = useNotes();
-  const { transcribeAudio } = useTranscription();
   const router = useRouter();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [pendingSave, setPendingSave] = useState(false);
-  const [processingStatus, setProcessingStatus] = useState("");
   const [shouldSaveOnStop, setShouldSaveOnStop] = useState(false);
 
   const formatTime = (seconds: number) => {
@@ -59,59 +54,77 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
 
     setIsProcessing(true);
     try {
-      const result = await transcribeAudio(audioBlob, {
-        onProgress: setProcessingStatus,
-        generateTitle: true,
+      // Convert audio blob to base64 for embedding in note
+      const reader = new FileReader();
+      const audioBase64 = await new Promise<string>((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(audioBlob);
       });
 
-      if (result && result.title && result.transcription) {
-        console.log(result.usage);
+      // Create note with audio and placeholder text
+      const newNote = await addNote({
+        title: "Voice Recording",
+        content: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: `[Audio: ${audioBlob.type}]`
+                }
+              ]
+            },
+            {
+              type: "paragraph",
+              content: []
+            },
+            {
+              type: "paragraph",
+              content: [
+                {
+                  type: "text",
+                  text: "Transcribing audio..."
+                }
+              ]
+            }
+          ]
+        }
+      });
 
-        toast.promise(
-          async () => {
-            const newNote = await addNote({
-              title: result.title!,
-              content: {
-                type: "doc",
-                content: [
-                  {
-                    type: "paragraph",
-                    content: [
-                      {
-                        type: "text",
-                        text: result.transcription
-                      }
-                    ]
-                  }
-                ]
-              }
-            });
-            router.push(`/note/${newNote.id}`);
-          },
-          {
-            loading: "Saving note...",
-            success: "Note saved!",
-            error: "Failed to save note.",
-          }
-        );
-      } else {
-        toast.error("Title or transcription is empty. Cannot save note.");
-      }
+      // Store audio in localStorage temporarily for the note page to access
+      localStorage.setItem(`audio_${newNote.id}`, audioBase64);
+
+      // Navigate immediately with transcription params
+      const params = new URLSearchParams({
+        streamTranscription: 'true'
+      });
+
+      router.push(`/note/${newNote.id}?${params.toString()}`);
+      toast.success("Note created! Transcription will stream in shortly...");
+      onOpenChange(false);
     } catch (err) {
       console.error(err);
-      // Error handling is already done in the transcription hook
+      toast.error("Failed to create note.");
     } finally {
       setIsProcessing(false);
-      onClose();
     }
   };
 
+  // Auto-start recording when modal opens
   useEffect(() => {
-    if (pendingSave && audioBlob) {
-      setPendingSave(false);
-      handleSaveRecording();
+    if (open && !recording && !audioBlob) {
+      startRecording();
     }
-  }, [pendingSave, audioBlob]);
+  }, [open]);
+
+  // Stop recording when modal closes
+  useEffect(() => {
+    if (!open && recording) {
+      stopRecording();
+    }
+  }, [open, recording]);
 
   // Handle auto-save when recording stops and audioBlob becomes available
   useEffect(() => {
@@ -122,98 +135,82 @@ export function RecordingModal({ onClose }: RecordingModalProps) {
   }, [shouldSaveOnStop, audioBlob, recording]);
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent
-        showCloseButton={false}
-        className="!max-w-[392px] !p-0 rounded-tl-xl rounded-tr-xloverflow-hidden gap-0"
+    <Popover open={open} onOpenChange={onOpenChange}>
+      {children}
+      <PopoverContent
+        className="w-[392px] p-0 rounded-xl overflow-hidden"
+        align="center"
+        sideOffset={8}
       >
-        <DialogHeader className="p-0">
-          <DialogTitle className="sr-only">Recording Modal</DialogTitle>
-        </DialogHeader>
-
         {isProcessing ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 p-4">
-            <p className="text-gray-500 flex items-center">
-              <Loader className="size-4 mr-1" />
-              {processingStatus}
-              <span className="animate-pulse">...</span>
+          <div className="flex flex-col items-center justify-center h-full gap-4 p-4 min-h-[200px]">
+            <p className="text-muted-foreground flex items-center text-sm">
+              <div className="size-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Creating note...
             </p>
           </div>
         ) : (
           <div className="flex flex-col items-center w-full">
-            {!recording ? (
-              <div className="p-4">
-                <h2 className="text-lg font-semibold">Start a new recording</h2>
+            <div className="flex flex-row gap-8 mt-8">
+              <Button
+                variant='destructive'
+                className="size-10 rounded-xl"
+                onClick={() => {
+                  resetRecording();
+                  startRecording();
+                }}
+                type="button"
+                aria-label="Reset recording"
+              >
+                <X className="size-4" />
+              </Button>
+
+              <div className="flex flex-col gap-1">
+                <p className="text-base text-center">
+                  {formatTime(duration)}
+                </p>
+                <AudioWaveform analyserNode={analyserNode} isPaused={paused} />
               </div>
-            ) : (
-              <div className="flex flex-row gap-8 mt-8">
+
+              {paused ? (
                 <Button
-                  variant='destructive'
-                  className="size-10 rounded-xl"
-                  onClick={resetRecording}
+                  className="size-10 p-2.5 rounded-xl cursor-pointer"
+                  onClick={resumeRecording}
+                  variant="secondary"
                   type="button"
-                  aria-label="Reset recording"
+                  aria-label="Resume recording"
                 >
-                  <X className="size-4" />
+                  <Play className="size-4" />
                 </Button>
-
-                <div className="flex flex-col gap-1">
-                  <p className="text-base text-center">
-                    {formatTime(duration)}
-                  </p>
-                  <AudioWaveform analyserNode={analyserNode} isPaused={paused} />
-                </div>
-
-                {paused ? (
-                  <Button
-                    className="size-10 p-2.5 rounded-xl cursor-pointer"
-                    onClick={resumeRecording}
-                    variant="secondary"
-                    type="button"
-                    aria-label="Resume recording"
-                  >
-                    <Mic2 className="size-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    className="size-10 p-2.5 rounded-xl cursor-pointer"
-                    variant="secondary"
-                    onClick={pauseRecording}
-                    type="button"
-                    aria-label="Pause recording"
-                  >
-                    <Pause className="size-4" />
-                  </Button>
-                )}
-              </div>
-            )}
+              ) : (
+                <Button
+                  className="size-10 p-2.5 rounded-xl cursor-pointer"
+                  variant="secondary"
+                  onClick={pauseRecording}
+                  type="button"
+                  aria-label="Pause recording"
+                >
+                  <Pause className="size-4" />
+                </Button>
+              )}
+            </div>
 
             <Button
               className={cn(
-                "w-2/3 h-12 rounded-xl flex flex-row gap-3 items-center justify-center mb-5"
+                "w-1/2 h-12 rounded-xl flex flex-row gap-3 items-center justify-center mb-5 mt-4"
               )}
               onClick={() => {
-                if (recording) {
-                  stopRecording();
-                  setShouldSaveOnStop(true);
-                } else {
-                  startRecording();
-                }
+                stopRecording();
+                setShouldSaveOnStop(true);
               }}
               disabled={isProcessing}
             >
-              {recording ? (
-                <>
-                  <StopCircle className="size-5" />
-                  <p>Stop Recording</p>
-                </>
-              ) : (
-                <Mic2 className="size-5" />
-              )}
+              <StopCircle className="size-5" />
+              <p>Create note</p>
             </Button>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   );
 }

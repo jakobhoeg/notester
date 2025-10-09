@@ -39,7 +39,7 @@ const TailwindAdvancedEditor = ({ content, onUpdate, onEditorCreate }: TailwindA
     onUpdate(json);
     setCharsCount(editor.storage.characterCount?.words() || 0);
     setSaveStatus("Saved");
-  }, 500);
+  }, 1000);
 
   // Effect to update editor content when content prop changes (only for initial load)
   useEffect(() => {
@@ -73,7 +73,7 @@ const TailwindAdvancedEditor = ({ content, onUpdate, onEditorCreate }: TailwindA
           immediatelyRender={false}
           initialContent={content}
           extensions={extensions}
-          className="w-full min-h-[400px] p-2"
+          className="w-full p-2"
           editorProps={{
             handleDOMEvents: {
               keydown: (_view, event) => handleCommandNavigation(event),
