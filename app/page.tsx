@@ -4,17 +4,28 @@ import { RecordingModal } from "@/components/recording-modal"
 import { UploadModal } from "@/components/upload-modal"
 import { PopoverTrigger } from "@/components/ui/popover"
 import { useNotes } from "@/app/hooks/useNotes"
-import { BookPlus, Mic2, Upload, ImagePlus } from "lucide-react"
+import { BookPlus, Mic2, Upload, ImagePlus, Send } from "lucide-react"
 import { useState } from "react"
 import Footer from "@/components/footer"
 import { useRouter } from "next/navigation"
 import ImageUpload from "@/components/image-upload"
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputTextarea,
+  PromptInputToolbar,
+  PromptInputSubmit,
+  type PromptInputMessage,
+} from "@/components/ai-elements/prompt-input"
+import { Loader } from "@/components/ai-elements/loader"
+import { toast } from "sonner"
 
 export default function Home() {
   const { addNote } = useNotes()
   const [isRecordingPopoverOpen, setRecordingPopoverOpen] = useState(false)
   const [isUploadPopoverOpen, setUploadPopoverOpen] = useState(false)
   const [isImageUploadPopoverOpen, setImageUploadPopoverOpen] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const router = useRouter();
 
   const handleCreateNewNote = async () => {
@@ -24,10 +35,88 @@ export default function Home() {
     router.push(`/note/${newNote.id}`);
   }
 
+  const handleAIPromptSubmit = async (message: PromptInputMessage) => {
+    const userPrompt = message.text?.trim();
+
+    if (!userPrompt) {
+      toast.error("Please enter a prompt to generate a note.")
+      return
+    }
+
+    setIsProcessing(true)
+
+    try {
+      // Create initial note content with a placeholder
+      const initialNoteContent = {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "text",
+                text: "Generating content..."
+              }
+            ]
+          }
+        ]
+      }
+
+      // Create the note immediately with placeholder
+      const newNote = await addNote({
+        title: "AI Generated Note",
+        content: initialNoteContent
+      })
+
+      // Navigate to the note page with AI generation params
+      const params = new URLSearchParams({
+        streamAIGeneration: 'true',
+        userPrompt: userPrompt
+      })
+
+      router.push(`/note/${newNote.id}?${params.toString()}`)
+      toast.success("Note created! AI is generating content...")
+    } catch (err) {
+      console.error("Error creating AI note:", err)
+      toast.error("Failed to create note.")
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-full w-full min-h-0">
       <main className="px-4 overflow-y-auto w-full max-w-4xl mx-auto min-h-0 overflow-hidden flex flex-col items-center justify-center h-full">
         <div className="w-full max-w-4xl space-y-6">
+          {/* AI Prompt Input */}
+          <div className="w-full">
+            <PromptInput
+              onSubmit={handleAIPromptSubmit}
+              onError={(error) => {
+                if ('message' in error) {
+                  toast.error(error.message)
+                }
+              }}
+            >
+              <PromptInputBody>
+                <PromptInputTextarea
+                  placeholder="Ask AI to write a note... (e.g., 'Write a summary about quantum computing' or 'Create a study guide for machine learning')"
+                  disabled={isProcessing}
+                  className="min-h-[60px]"
+                />
+                <PromptInputToolbar>
+                  <div />
+                  <PromptInputSubmit
+                    disabled={isProcessing}
+                    status={isProcessing ? "submitted" : "ready"}
+                  >
+                    {isProcessing ? <Loader /> : <Send />}
+                  </PromptInputSubmit>
+                </PromptInputToolbar>
+              </PromptInputBody>
+            </PromptInput>
+          </div>
+
           {/* Action Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-1 lg:gap-4">
             {/* Image Upload Card */}

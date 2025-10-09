@@ -7,12 +7,13 @@ import Link from "next/link"
 import { useNotes } from "@/app/hooks/useNotes"
 import { useImageAnalysis } from "@/app/hooks/useImageAnalysis"
 import { useTranscription } from "@/app/hooks/useTranscription"
+import { useAIGeneration } from "@/app/hooks/useAIGeneration"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { TransformDropdown } from "../components/transformation-panel"
 import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core"
 import { streamText } from "ai"
-import { cn, generateTransformationPrompt, createContentFromText, appendTextToContent } from "@/lib/utils"
+import { cn, generateTransformationPrompt, createContentFromText, appendTextToContent, markdownToJSONContent } from "@/lib/utils"
 import { CustomMarkdown } from "@/components/ui/markdown"
 import LoadingBars from "@/components/ui/loading-bars"
 import Footer from "@/components/footer"
@@ -49,6 +50,7 @@ export default function NotePage() {
   const { updateNote, deleteNote, useNoteQuery } = useNotes()
   const { analyzeImages } = useImageAnalysis()
   const { transcribeAudio } = useTranscription()
+  const { generateContent } = useAIGeneration()
   const params = useParams<{ id: string }>();
   const id = params.id as string;
   const { data: note, isLoading } = useNoteQuery(id)
@@ -64,11 +66,13 @@ export default function NotePage() {
   const [isAnalyzingImages, setIsAnalyzingImages] = useState(false)
   const [analysisText, setAnalysisText] = useState("")
   const [isTranscribing, setIsTranscribing] = useState(false)
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false)
 
   const titleDebounceTimeout = useRef<NodeJS.Timeout | null>(null)
   const contentDebounceTimeout = useRef<NodeJS.Timeout | null>(null)
   const editorRef = useRef<EditorInstance | null>(null)
   const hasStartedTranscription = useRef(false)
+  const hasStartedAIGeneration = useRef(false)
 
   useEffect(() => {
     if (note) {
@@ -147,6 +151,9 @@ export default function NotePage() {
       })
 
       if (result && result.analysis) {
+        // Parse the markdown analysis into proper JSONContent
+        const analysisContent = markdownToJSONContent(result.analysis)
+
         // Update the note content with the analysis
         const updatedContent = { ...note.content }
         const placeholderIndex = updatedContent.content?.findIndex(
@@ -156,16 +163,13 @@ export default function NotePage() {
         )
 
         if (placeholderIndex !== undefined && placeholderIndex >= 0 && updatedContent.content) {
-          // Replace the placeholder with the analysis
-          updatedContent.content[placeholderIndex] = {
-            type: 'paragraph',
-            content: [
-              {
-                type: 'text',
-                text: result.analysis
-              }
-            ]
-          }
+          // Replace the placeholder with the parsed analysis content
+          // Remove the placeholder and insert all parsed content nodes
+          updatedContent.content.splice(
+            placeholderIndex,
+            1,
+            ...(analysisContent.content || [])
+          )
 
           setEditableContent(updatedContent)
 
@@ -236,6 +240,17 @@ export default function NotePage() {
     }
   }, [note, searchParams])
 
+  // Handle streaming AI generation from URL parameters
+  useEffect(() => {
+    const shouldStreamAIGeneration = searchParams.get('streamAIGeneration') === 'true'
+    const userPrompt = searchParams.get('userPrompt')
+
+    if (shouldStreamAIGeneration && userPrompt && note && !hasStartedAIGeneration.current) {
+      hasStartedAIGeneration.current = true
+      startAIGeneration(userPrompt)
+    }
+  }, [note, searchParams])
+
   const startAudioTranscription = async () => {
     if (!note) return
 
@@ -264,6 +279,9 @@ export default function NotePage() {
       })
 
       if (result && result.transcription) {
+        // Parse the transcription into proper JSONContent (in case it has markdown)
+        const transcriptionContent = markdownToJSONContent(result.transcription)
+
         // Update the note content with transcription
         const updatedContent = { ...note.content }
         const placeholderIndex = updatedContent.content?.findIndex(
@@ -273,16 +291,13 @@ export default function NotePage() {
         )
 
         if (placeholderIndex !== undefined && placeholderIndex >= 0 && updatedContent.content) {
-          // Replace placeholder with transcription
-          updatedContent.content[placeholderIndex] = {
-            type: 'paragraph',
-            content: [
-              {
-                type: 'text',
-                text: result.transcription
-              }
-            ]
-          }
+          // Replace placeholder with parsed transcription content
+          // Remove the placeholder and insert all parsed content nodes
+          updatedContent.content.splice(
+            placeholderIndex,
+            1,
+            ...(transcriptionContent.content || [])
+          )
 
           setEditableContent(updatedContent)
 
@@ -315,6 +330,75 @@ export default function NotePage() {
       hasStartedTranscription.current = false
     } finally {
       setIsTranscribing(false)
+    }
+  }
+
+  const startAIGeneration = async (userPrompt: string) => {
+    if (!note) return
+
+    setIsGeneratingAI(true)
+
+    try {
+      // Generate content using the user's prompt
+      const result = await generateContent(userPrompt, {
+        generateTitle: true,
+        showToasts: false,
+        onProgress: (status) => {
+          console.log(`AI generation progress: ${status}`)
+        }
+      })
+
+      if (result && result.content) {
+        // Parse the markdown content into proper JSONContent
+        const generatedContent = markdownToJSONContent(result.content)
+
+        // Update the note content with the generated content
+        const updatedContent = { ...note.content }
+        const placeholderIndex = updatedContent.content?.findIndex(
+          node => node.type === 'paragraph' &&
+            node.content?.[0]?.type === 'text' &&
+            node.content[0].text?.includes('Generating content')
+        )
+
+        if (placeholderIndex !== undefined && placeholderIndex >= 0 && updatedContent.content) {
+          // Replace the placeholder with the parsed generated content
+          // Remove the placeholder and insert all parsed content nodes
+          updatedContent.content.splice(
+            placeholderIndex,
+            1,
+            ...(generatedContent.content || [])
+          )
+
+          setEditableContent(updatedContent)
+
+          // Update the note in the database
+          await updateNote({
+            id: note.id,
+            updates: {
+              content: updatedContent,
+              title: result.title || note.title
+            }
+          })
+
+          // Update the title if we got a new one
+          if (result.title) {
+            setEditableTitle(result.title)
+          }
+
+          toast.success("AI content generation completed!")
+        }
+      }
+    } catch (error) {
+      console.error('Error during AI generation:', error)
+      toast.error("Failed to generate AI content")
+    } finally {
+      setIsGeneratingAI(false)
+      // Clean up URL parameters
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('streamAIGeneration')
+      newUrl.searchParams.delete('userPrompt')
+      window.history.replaceState({}, '', newUrl.toString())
+      hasStartedAIGeneration.current = false
     }
   }
 
@@ -554,7 +638,7 @@ export default function NotePage() {
                 <NoteSkeleton />
               ) : (
                 <div className="min-h-full relative">
-                  {isStreaming || isTransformationPendingConfirmation || isAnalyzingImages || isTranscribing ? (
+                  {isStreaming || isTransformationPendingConfirmation || isAnalyzingImages || isTranscribing || isGeneratingAI ? (
                     <div
                       className={cn(
                         "whitespace-pre-line rounded p-2",
@@ -563,7 +647,7 @@ export default function NotePage() {
                         "border-2 border-primary-foreground bg-muted/10 animate-pulse",
                       )}
                     >
-                      {isAnalyzingImages || isTranscribing ? (
+                      {isAnalyzingImages || isTranscribing || isGeneratingAI ? (
                         <div className="space-y-4">
                           <TailwindAdvancedEditor
                             key={id}
