@@ -21,7 +21,12 @@ import {
   Youtube,
 } from "novel";
 import { Heading } from "@tiptap/extension-heading";
+import Table from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableHeader from "@tiptap/extension-table-header";
+import TableCell from "@tiptap/extension-table-cell";
 import { AIAutocompleteExtension } from "./ai/ai-autocomplete-extension";
+import { MarkdownTablePaste } from "./markdown-table-paste";
 
 import { cx } from "class-variance-authority";
 import { common, createLowlight } from "lowlight";
@@ -194,6 +199,31 @@ const markdownExtension = MarkdownExtension.configure({
   transformCopiedText: false,
 });
 
+const table = Table.configure({
+  HTMLAttributes: {
+    class: cx("border-collapse table-auto w-full my-4"),
+  },
+  resizable: true,
+});
+
+const tableRow = TableRow.configure({
+  HTMLAttributes: {
+    class: cx("border-b border-muted"),
+  },
+});
+
+const tableHeader = TableHeader.configure({
+  HTMLAttributes: {
+    class: cx("border border-muted bg-muted/50 font-semibold text-left p-2"),
+  },
+});
+
+const tableCell = TableCell.configure({
+  HTMLAttributes: {
+    class: cx("border border-muted p-2"),
+  },
+});
+
 const aiAutocomplete = AIAutocompleteExtension.configure({
   debounceMs: 1000,
   minChars: 10,
@@ -224,4 +254,9 @@ export const defaultExtensions = [
   Color,
   CustomKeymap,
   GlobalDragHandle,
+  table,
+  tableRow,
+  tableHeader,
+  tableCell,
+  MarkdownTablePaste,
 ];

@@ -134,6 +134,56 @@ function parseInlineMarkdown(text: string): JSONContent[] {
   return result.length > 0 ? result : [{ type: "text", text }];
 }
 
+// Helper function to parse markdown table
+function parseMarkdownTable(tableLines: string[]): JSONContent | null {
+  if (tableLines.length < 2) return null;
+
+  // Parse rows
+  const rows = tableLines.map(line => {
+    // Remove leading/trailing pipes and split by pipe
+    const cells = line
+      .trim()
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map(cell => cell.trim());
+    return cells;
+  });
+
+  // Check if second row is separator (contains dashes)
+  const hasSeparator = rows[1] && rows[1].every(cell => /^[-:\s]+$/.test(cell));
+  const hasHeaderRow = hasSeparator;
+
+  // Skip separator row if present
+  const dataRows = hasSeparator ? [rows[0], ...rows.slice(2)] : rows;
+
+  const tableContent: JSONContent[] = [];
+
+  dataRows.forEach((row, rowIndex) => {
+    const isHeader = hasHeaderRow && rowIndex === 0;
+    const cellType = isHeader ? "tableHeader" : "tableCell";
+
+    const rowContent: JSONContent[] = row.map(cellText => ({
+      type: cellType,
+      attrs: {},
+      content: [{
+        type: "paragraph",
+        content: cellText ? parseInlineMarkdown(cellText) : [{ type: "text", text: "" }]
+      }]
+    }));
+
+    tableContent.push({
+      type: "tableRow",
+      content: rowContent
+    });
+  });
+
+  return {
+    type: "table",
+    content: tableContent
+  };
+}
+
 // Helper function to convert markdown text to JSONContent
 export function markdownToJSONContent(markdown: string): JSONContent {
   if (!markdown || !markdown.trim()) {
@@ -268,6 +318,25 @@ export function markdownToJSONContent(markdown: string): JSONContent {
           content: parseInlineMarkdown(quoteMatch[1])
         }]
       });
+      continue;
+    }
+
+    // Table detection (starts with |)
+    if (trimmedLine.startsWith('|')) {
+      flushParagraph();
+      const tableLines: string[] = [trimmedLine];
+
+      // Collect all consecutive table lines
+      while (i + 1 < lines.length && lines[i + 1].trim().startsWith('|')) {
+        i++;
+        tableLines.push(lines[i].trim());
+      }
+
+      // Parse table
+      const parsedTable = parseMarkdownTable(tableLines);
+      if (parsedTable) {
+        content.push(parsedTable);
+      }
       continue;
     }
 

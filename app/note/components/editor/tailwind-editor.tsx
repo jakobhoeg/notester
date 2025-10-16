@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { slashCommand, suggestionItems } from "./slash-command";
 import GenerativeMenuSwitch from "./generative-menu-switch";
 import { NodeSelector } from "./node-selector";
+import { TableControls } from "./table-controls";
 
 const extensions = [...defaultExtensions, slashCommand];
 
@@ -138,6 +139,7 @@ const TailwindAdvancedEditor = ({ content, onUpdate, onEditorCreate }: TailwindA
             <Separator orientation="vertical" />
             <NodeSelector open={openNode} onOpenChange={setOpenNode} />
             <Separator orientation="vertical" />
+            <TableControls />
           </GenerativeMenuSwitch>
         </EditorContent>
       </EditorRoot>
