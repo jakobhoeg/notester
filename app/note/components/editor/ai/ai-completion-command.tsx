@@ -1,6 +1,7 @@
 import { CommandGroup, CommandItem, CommandSeparator } from "@/components/ui/command";
 import { useEditor, removeAIHighlight } from "novel";
 import { Check, TextQuote, TrashIcon } from "lucide-react";
+import { markdownToJSONContent } from "@/lib/utils";
 
 const AICompletionCommands = ({
   completion,
@@ -20,17 +21,18 @@ const AICompletionCommands = ({
           onSelect={() => {
             const selection = editor!.view.state.selection;
 
-            editor!
-              .chain()
-              .focus()
-              .insertContentAt(
-                {
-                  from: selection.from,
-                  to: selection.to,
-                },
-                completion,
-              )
-              .run();
+            // Convert markdown to JSONContent
+            const jsonContent = markdownToJSONContent(completion);
+            console.log("JSON Content:", jsonContent);
+            console.log("Completion text:", completion);
+
+            // Delete the current selection first, then insert new content
+            editor!.chain().focus().deleteRange({ from: selection.from, to: selection.to }).run();
+
+            // Insert the parsed content
+            if (jsonContent.content && jsonContent.content.length > 0) {
+              editor!.chain().focus().insertContent(jsonContent.content).run();
+            }
 
             // Clean up AI highlights after the operation
             removeAIHighlight(editor!);
@@ -45,15 +47,14 @@ const AICompletionCommands = ({
           onSelect={() => {
             const state = editor!.state;
             const selection = state.selection;
-            const docSize = state.doc.content.size;
 
-            const insertPos = Math.min(selection.to + 1, docSize);
+            // Convert markdown to JSONContent
+            const jsonContent = markdownToJSONContent(completion);
 
-            editor!
-              .chain()
-              .focus()
-              .insertContentAt(insertPos, completion)
-              .run();
+            // Move cursor to end of selection and insert content
+            if (jsonContent.content && jsonContent.content.length > 0) {
+              editor!.chain().focus().setTextSelection(selection.to).insertContent(jsonContent.content).run();
+            }
 
             // Clean up AI highlights after the operation
             removeAIHighlight(editor!);

@@ -165,7 +165,11 @@ function parseMarkdownTable(tableLines: string[]): JSONContent | null {
 
     const rowContent: JSONContent[] = row.map(cellText => ({
       type: cellType,
-      attrs: {},
+      attrs: {
+        colspan: 1,
+        rowspan: 1,
+        colwidth: null,
+      },
       content: [{
         type: "paragraph",
         content: cellText ? parseInlineMarkdown(cellText) : [{ type: "text", text: "" }]

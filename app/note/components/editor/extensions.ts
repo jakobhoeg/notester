@@ -201,7 +201,7 @@ const markdownExtension = MarkdownExtension.configure({
 
 const table = Table.configure({
   HTMLAttributes: {
-    class: cx("border-collapse table-auto w-full my-4"),
+    class: cx("border-collapse table-auto w-full my-4 p-4"),
   },
   resizable: true,
 });

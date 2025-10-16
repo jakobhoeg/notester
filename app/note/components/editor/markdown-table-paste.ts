@@ -48,6 +48,11 @@ function parseMarkdownTable(text: string) {
   if (headerRow) {
     const headerCells = headerRow.map(cellText => ({
       type: 'tableHeader',
+      attrs: {
+        colspan: 1,
+        rowspan: 1,
+        colwidth: null,
+      },
       content: [{
         type: 'paragraph',
         content: cellText ? [{ type: 'text', text: cellText }] : []
@@ -64,6 +69,11 @@ function parseMarkdownTable(text: string) {
   dataRows.forEach(row => {
     const cells = row.map(cellText => ({
       type: 'tableCell',
+      attrs: {
+        colspan: 1,
+        rowspan: 1,
+        colwidth: null,
+      },
       content: [{
         type: 'paragraph',
         content: cellText ? [{ type: 'text', text: cellText }] : []
