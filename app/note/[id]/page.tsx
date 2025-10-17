@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { useRouter, useParams, useSearchParams } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { useNotes } from "@/app/hooks/useNotes"
 import { useImageAnalysis } from "@/app/hooks/useImageAnalysis"
@@ -47,8 +47,7 @@ const extractTextFromContent = (content: JSONContent): string => {
 
 export default function NotePage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const { updateNote, deleteNote, useNoteQuery } = useNotes()
+  const { updateNote, deleteNote, useNoteQuery, getGenerationData, deleteGenerationData } = useNotes()
   const { analyzeImages } = useImageAnalysis()
   const { transcribeAudio } = useTranscription()
   const { generateContent } = useAIGeneration()
@@ -96,16 +95,33 @@ export default function NotePage() {
     }
   }, [note, id])
 
-  // Handle streaming analysis from URL parameters
+  // Handle streaming analysis based on database isGenerating flag
   useEffect(() => {
-    const shouldStreamAnalysis = searchParams.get('streamAnalysis') === 'true'
-    const customPrompt = searchParams.get('customPrompt') || undefined
-    const imageCount = searchParams.get('imageCount')
+    if (note?.isGenerating && !isAnalyzingImages && !hasStartedTranscription.current && !hasStartedAIGeneration.current && !hasStartedPDFGeneration.current) {
+      // Get generation data from PGlite
+      getGenerationData(note.id).then((genData) => {
+        if (!genData) return;
 
-    if (shouldStreamAnalysis && note && !isAnalyzingImages) {
-      startImageAnalysis(customPrompt, parseInt(imageCount || '0'))
+        switch (genData.generation_type) {
+          case 'audio':
+            hasStartedTranscription.current = true
+            startAudioTranscription(genData.data.audioBase64)
+            break;
+          case 'pdf':
+            hasStartedPDFGeneration.current = true
+            startPDFNoteGeneration(genData.data.pdfText, genData.data.pdfMetadata, genData.data.customPrompt)
+            break;
+          case 'ai':
+            hasStartedAIGeneration.current = true
+            startAIGeneration(genData.data.userPrompt)
+            break;
+          case 'image':
+            startImageAnalysis(genData.data.customPrompt, genData.data.imageCount)
+            break;
+        }
+      });
     }
-  }, [note, searchParams, isAnalyzingImages])
+  }, [note?.isGenerating, note?.id])
 
   const startImageAnalysis = async (customPrompt: string | undefined, imageCount: number) => {
     if (!note) return
@@ -182,7 +198,8 @@ export default function NotePage() {
             id: note.id,
             updates: {
               content: updatedContent,
-              title: result.title || note.title
+              title: result.title || note.title,
+              isGenerating: false
             }
           })
 
@@ -198,14 +215,17 @@ export default function NotePage() {
       console.error('Error during image analysis:', error)
       updateAnalysisPlaceholder("Failed to analyze images")
       toast.error("Failed to analyze images")
+      // Set isGenerating to false on error
+      if (note) {
+        await updateNote({
+          id: note.id,
+          updates: { isGenerating: false }
+        })
+      }
     } finally {
       setIsAnalyzingImages(false)
-      // Clean up URL parameters
-      const newUrl = new URL(window.location.href)
-      newUrl.searchParams.delete('streamAnalysis')
-      newUrl.searchParams.delete('customPrompt')
-      newUrl.searchParams.delete('imageCount')
-      window.history.replaceState({}, '', newUrl.toString())
+      // Clean up generation data from PGlite
+      await deleteGenerationData(note.id)
     }
   }
 
@@ -234,46 +254,13 @@ export default function NotePage() {
     })
   }
 
-  // Handle streaming transcription from URL parameters
-  useEffect(() => {
-    const shouldStreamTranscription = searchParams.get('streamTranscription') === 'true'
 
-    if (shouldStreamTranscription && note && !hasStartedTranscription.current) {
-      hasStartedTranscription.current = true
-      startAudioTranscription()
-    }
-  }, [note, searchParams])
-
-  // Handle streaming AI generation from URL parameters
-  useEffect(() => {
-    const shouldStreamAIGeneration = searchParams.get('streamAIGeneration') === 'true'
-    const userPrompt = searchParams.get('userPrompt')
-
-    if (shouldStreamAIGeneration && userPrompt && note && !hasStartedAIGeneration.current) {
-      hasStartedAIGeneration.current = true
-      startAIGeneration(userPrompt)
-    }
-  }, [note, searchParams])
-
-  // Handle streaming PDF note generation from URL parameters
-  useEffect(() => {
-    const shouldStreamPDFAnalysis = searchParams.get('streamPDFAnalysis') === 'true'
-
-    if (shouldStreamPDFAnalysis && note && !hasStartedPDFGeneration.current) {
-      hasStartedPDFGeneration.current = true
-      startPDFNoteGeneration()
-    }
-  }, [note, searchParams])
-
-  const startAudioTranscription = async () => {
+  const startAudioTranscription = async (audioBase64: string) => {
     if (!note) return
 
     setIsTranscribing(true)
 
     try {
-      // Retrieve audio from localStorage
-      const audioBase64 = localStorage.getItem(`audio_${note.id}`)
-
       if (!audioBase64) {
         toast.error("No audio found to transcribe")
         return
@@ -320,7 +307,8 @@ export default function NotePage() {
             id: note.id,
             updates: {
               content: updatedContent,
-              title: result.title || note.title
+              title: result.title || note.title,
+              isGenerating: false
             }
           })
 
@@ -332,16 +320,20 @@ export default function NotePage() {
         }
       }
 
-      // Clean up localStorage and URL params
-      localStorage.removeItem(`audio_${note.id}`)
-      const newUrl = new URL(window.location.href)
-      newUrl.searchParams.delete('streamTranscription')
-      window.history.replaceState({}, '', newUrl.toString())
+      // Clean up generation data from PGlite
+      await deleteGenerationData(note.id)
       hasStartedTranscription.current = false
     } catch (error) {
       console.error('Error during transcription:', error)
       toast.error("Failed to transcribe audio")
       hasStartedTranscription.current = false
+      // Set isGenerating to false on error
+      if (note) {
+        await updateNote({
+          id: note.id,
+          updates: { isGenerating: false }
+        })
+      }
     } finally {
       setIsTranscribing(false)
     }
@@ -390,7 +382,8 @@ export default function NotePage() {
             id: note.id,
             updates: {
               content: updatedContent,
-              title: result.title || note.title
+              title: result.title || note.title,
+              isGenerating: false
             }
           })
 
@@ -405,40 +398,37 @@ export default function NotePage() {
     } catch (error) {
       console.error('Error during AI generation:', error)
       toast.error("Failed to generate AI content")
+      // Set isGenerating to false on error
+      if (note) {
+        await updateNote({
+          id: note.id,
+          updates: { isGenerating: false }
+        })
+      }
     } finally {
       setIsGeneratingAI(false)
-      // Clean up URL parameters
-      const newUrl = new URL(window.location.href)
-      newUrl.searchParams.delete('streamAIGeneration')
-      newUrl.searchParams.delete('userPrompt')
-      window.history.replaceState({}, '', newUrl.toString())
+      // Clean up generation data from PGlite
+      await deleteGenerationData(note.id)
       hasStartedAIGeneration.current = false
     }
   }
 
-  const startPDFNoteGeneration = async () => {
+  const startPDFNoteGeneration = async (pdfText: string, pdfMetadata: any, customPrompt?: string | null) => {
     if (!note) return
 
     setIsGeneratingPDF(true)
 
     try {
-      // Retrieve PDF text and metadata from sessionStorage
-      const pdfText = sessionStorage.getItem(`pdf_text_${note.id}`)
-      const pdfMetadataStr = sessionStorage.getItem(`pdf_metadata_${note.id}`)
-      const customPrompt = sessionStorage.getItem(`pdf_prompt_${note.id}`) || undefined
-
       if (!pdfText) {
         toast.error("No PDF text found to process")
         return
       }
 
-      const pdfMetadata = pdfMetadataStr ? JSON.parse(pdfMetadataStr) : undefined
-
       // Generate notes from PDF text
       const result = await generateNoteFromPDF({
         pdfText,
         pdfMetadata,
-        customPrompt,
+        customPrompt: customPrompt || undefined,
         generateTitle: true,
         showToasts: false,
         onProgress: (status) => {
@@ -475,7 +465,8 @@ export default function NotePage() {
             id: note.id,
             updates: {
               content: updatedContent,
-              title: result.title || note.title
+              title: result.title || note.title,
+              isGenerating: false
             }
           })
 
@@ -488,19 +479,20 @@ export default function NotePage() {
         }
       }
 
-      // Clean up sessionStorage
-      sessionStorage.removeItem(`pdf_text_${note.id}`)
-      sessionStorage.removeItem(`pdf_metadata_${note.id}`)
-      sessionStorage.removeItem(`pdf_prompt_${note.id}`)
+      // Clean up generation data from PGlite
+      await deleteGenerationData(note.id)
     } catch (error) {
       console.error('Error during PDF note generation:', error)
       toast.error("Failed to generate notes from PDF")
+      // Set isGenerating to false on error
+      if (note) {
+        await updateNote({
+          id: note.id,
+          updates: { isGenerating: false }
+        })
+      }
     } finally {
       setIsGeneratingPDF(false)
-      // Clean up URL parameters
-      const newUrl = new URL(window.location.href)
-      newUrl.searchParams.delete('streamPDFAnalysis')
-      window.history.replaceState({}, '', newUrl.toString())
       hasStartedPDFGeneration.current = false
     }
   }

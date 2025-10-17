@@ -22,7 +22,7 @@ import { Loader } from "@/components/ai-elements/loader"
 import { toast } from "sonner"
 
 export default function Home() {
-  const { addNote } = useNotes()
+  const { addNote, addGenerationData } = useNotes()
   const [isRecordingPopoverOpen, setRecordingPopoverOpen] = useState(false)
   const [isUploadPopoverOpen, setUploadPopoverOpen] = useState(false)
   const [isImageUploadPopoverOpen, setImageUploadPopoverOpen] = useState(false)
@@ -67,16 +67,16 @@ export default function Home() {
       // Create the note immediately with placeholder
       const newNote = await addNote({
         title: "AI Generated Note",
-        content: initialNoteContent
+        content: initialNoteContent,
+        isGenerating: true
       })
 
-      // Navigate to the note page with AI generation params
-      const params = new URLSearchParams({
-        streamAIGeneration: 'true',
-        userPrompt: userPrompt
-      })
+      // Store AI prompt in PGlite
+      await addGenerationData(newNote.id, 'ai', {
+        userPrompt
+      });
 
-      router.push(`/note/${newNote.id}?${params.toString()}`)
+      router.push(`/note/${newNote.id}`)
       toast.success("Note created! AI is generating content...")
     } catch (err) {
       console.error("Error creating AI note:", err)
