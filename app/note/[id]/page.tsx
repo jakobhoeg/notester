@@ -578,6 +578,24 @@ export default function NotePage() {
     setTransformedText("")
   }
 
+  const handleAIContentUpdate = async (newContent: JSONContent) => {
+    console.log('[handleAIContentUpdate] AI requested content update:', newContent);
+    setEditableContent(newContent)
+
+    if (contentDebounceTimeout.current) {
+      clearTimeout(contentDebounceTimeout.current)
+    }
+
+    if (note) {
+      console.log('[handleAIContentUpdate] Updating note in database, id:', note.id);
+      await updateNote({
+        id: note.id,
+        updates: { content: newContent },
+      })
+      console.log('[handleAIContentUpdate] Note updated successfully');
+    }
+  }
+
   const handleEditorCreate = (editor: EditorInstance) => {
     editorRef.current = editor
 
@@ -810,7 +828,11 @@ export default function NotePage() {
 
       {/* Right Sidebar */}
       <div className="group/sidebar-wrapper has-[data-side=right]:ml-0 h-full">
-        <SidebarAiChat key={note?.id} noteContent={note?.content || {}} />
+        <SidebarAiChat
+          key={note?.id}
+          noteContent={editableContent}
+          onContentUpdate={handleAIContentUpdate}
+        />
       </div>
     </div>
   )

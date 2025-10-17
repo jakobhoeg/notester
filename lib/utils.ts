@@ -474,3 +474,93 @@ export const RECORDING_TYPES: {
     // },
   ];
 
+// Helper function to extract text from JSONContent
+export function extractTextFromContent(content: JSONContent): string {
+  if (!content.content || content.content.length === 0) return "";
+
+  const extractText = (node: JSONContent): string => {
+    if (node.text) return node.text;
+    if (node.content) {
+      return node.content.map(extractText).join("");
+    }
+    return "";
+  };
+
+  return content.content.map(extractText).join("\n");
+}
+
+// Helper function to prepend text to existing JSONContent
+export function prependTextToContent(existingContent: JSONContent, newText: string): JSONContent {
+  if (!newText.trim()) {
+    return existingContent;
+  }
+
+  // Ensure we have valid existing content
+  const validatedContent = validateAndSanitizeContent(existingContent);
+
+  // Convert the new text to JSONContent (supports markdown)
+  const newContent = markdownToJSONContent(newText);
+
+  // Prepend the new content
+  const updatedContent = [
+    ...(newContent.content || []),
+    {
+      type: "paragraph",
+      content: []
+    },
+    ...(validatedContent.content || [])
+  ];
+
+  return {
+    type: "doc",
+    content: updatedContent
+  };
+}
+
+// Helper function to replace text in JSONContent
+export function replaceTextInContent(
+  content: JSONContent,
+  oldText: string,
+  newText: string,
+  replaceAll: boolean = false
+): JSONContent {
+  if (!oldText) return content;
+
+  // Extract full text
+  const fullText = extractTextFromContent(content);
+
+  // Perform replacement
+  let updatedText: string;
+  if (replaceAll) {
+    updatedText = fullText.split(oldText).join(newText);
+  } else {
+    updatedText = fullText.replace(oldText, newText);
+  }
+
+  // Convert back to JSONContent (preserving markdown)
+  return markdownToJSONContent(updatedText);
+}
+
+// Helper function to delete text from JSONContent
+export function deleteTextFromContent(
+  content: JSONContent,
+  textToDelete: string,
+  deleteAll: boolean = false
+): JSONContent {
+  if (!textToDelete) return content;
+
+  // Extract full text
+  const fullText = extractTextFromContent(content);
+
+  // Perform deletion
+  let updatedText: string;
+  if (deleteAll) {
+    updatedText = fullText.split(textToDelete).join('');
+  } else {
+    updatedText = fullText.replace(textToDelete, '');
+  }
+
+  // Convert back to JSONContent
+  return markdownToJSONContent(updatedText);
+}
+

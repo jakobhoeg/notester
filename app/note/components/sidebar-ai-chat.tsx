@@ -17,12 +17,15 @@ import { Button } from '@/components/ui/button';
 import { PromptInput, PromptInputButton, PromptInputSubmit, PromptInputTextarea, PromptInputToolbar, PromptInputTools } from '@/components/ai-elements/prompt-input';
 import { Kbd, KbdKey } from '@/components/ui/shadcn-io/kbd';
 import { JSONContent } from 'novel';
+import { lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from '@/components/ai-elements/tool';
 
 interface SidebarAIChatProps {
   noteContent: JSONContent,
+  onContentUpdate?: (content: JSONContent) => void,
 }
 
-export default function SidebarAiChat({ noteContent }: SidebarAIChatProps) {
+export default function SidebarAiChat({ noteContent, onContentUpdate }: SidebarAIChatProps) {
   const [input, setInput] = useState("");
   const setCurrentNoteContent = useNoteContentStore((state) => state.setCurrentNoteContent);
 
@@ -33,11 +36,12 @@ export default function SidebarAiChat({ noteContent }: SidebarAIChatProps) {
 
   const { error, status, sendMessage, messages, regenerate, stop, setMessages } =
     useChat<BuiltInAIUIMessage>({
-      transport: new ClientSideChatTransport(),
+      transport: new ClientSideChatTransport(onContentUpdate),
       onError(error) {
         toast.error(error.message);
       },
       experimental_throttle: 50,
+      sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
     });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -137,12 +141,53 @@ export default function SidebarAiChat({ noteContent }: SidebarAIChatProps) {
                           );
                         })}
 
+                      {/* Handle tool parts */}
+                      {m.parts
+                        .filter((part) => part.type.startsWith("tool-"))
+                        .map((part, partIndex) => {
+                          // Type guard to ensure part is a ToolUIPart
+                          if (!('state' in part)) return null;
+
+                          // Map state values to the expected type
+                          const toolState = (part.state === 'streaming' || part.state === 'done')
+                            ? 'output-available'
+                            : part.state || 'input-streaming';
+
+                          return (
+                            <Tool key={partIndex}>
+                              <ToolHeader type={part.type as any} state={toolState as any} />
+                              <ToolContent>
+                                {'input' in part && part.input !== undefined && (
+                                  <ToolInput input={part.input} />
+                                )}
+                                {('output' in part || 'errorText' in part) && (
+                                  <ToolOutput
+                                    output={'output' in part ? part.output : undefined}
+                                    errorText={'errorText' in part ? part.errorText : undefined}
+                                  />
+                                )}
+                              </ToolContent>
+                            </Tool>
+                          );
+                        })}
+
                       {/* Handle text parts */}
                       {m.parts
                         .filter((part) => part.type === "text")
                         .map((part, partIndex) => (
                           <Response key={partIndex}>{part.text}</Response>
                         ))}
+
+                      {/* Show loading indicator if this is the last assistant message and it's streaming with no text yet */}
+                      {(m.role === "assistant" || m.role === "system") &&
+                        index === messages.length - 1 &&
+                        (status === "streaming" || status === "submitted") &&
+                        m.parts.filter((part) => part.type === "text").length === 0 && (
+                          <div className="flex gap-1 items-center text-muted-foreground mt-2">
+                            <Loader className="size-4" />
+                            <span className="text-sm">Thinking...</span>
+                          </div>
+                        )}
 
                       {/* Action buttons for assistant messages */}
                       {(m.role === "assistant" || m.role === "system") &&
@@ -173,17 +218,21 @@ export default function SidebarAiChat({ noteContent }: SidebarAIChatProps) {
                   </Message>
                 ))}
 
-                {/* Loading state */}
+                {/* Loading state - only show as separate message if there's no assistant message to attach to */}
                 {status === "submitted" && (
-                  <Message from="assistant">
-                    <MessageContent>
-                      <div className="flex gap-1 items-center text-gray-500">
-                        <Loader className="size-4" />
-                        Thinking...
-                      </div>
-                    </MessageContent>
-                  </Message>
-                )}
+                  messages.length === 0 ||
+                  (messages[messages.length - 1].role !== "assistant" &&
+                    messages[messages.length - 1].role !== "system")
+                ) && (
+                    <Message from="assistant">
+                      <MessageContent>
+                        <div className="flex gap-1 items-center text-muted-foreground">
+                          <Loader className="size-4" />
+                          <span className="text-sm">Thinking...</span>
+                        </div>
+                      </MessageContent>
+                    </Message>
+                  )}
 
                 {/* Error state */}
                 {error && (
