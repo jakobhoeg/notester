@@ -4,11 +4,12 @@ import { RecordingModal } from "@/components/recording-modal"
 import { UploadModal } from "@/components/upload-modal"
 import { PopoverTrigger } from "@/components/ui/popover"
 import { useNotes } from "@/app/hooks/useNotes"
-import { BookPlus, Mic2, Upload, ImagePlus, Send } from "lucide-react"
+import { BookPlus, Mic2, Upload, ImagePlus, Send, FileText } from "lucide-react"
 import { useState } from "react"
 import Footer from "@/components/footer"
 import { useRouter } from "next/navigation"
 import ImageUpload from "@/components/image-upload"
+import PDFUploadModal from "@/components/pdf-upload-modal"
 import {
   PromptInput,
   PromptInputBody,
@@ -25,6 +26,7 @@ export default function Home() {
   const [isRecordingPopoverOpen, setRecordingPopoverOpen] = useState(false)
   const [isUploadPopoverOpen, setUploadPopoverOpen] = useState(false)
   const [isImageUploadPopoverOpen, setImageUploadPopoverOpen] = useState(false)
+  const [isPDFUploadPopoverOpen, setPDFUploadPopoverOpen] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const router = useRouter();
 
@@ -119,6 +121,21 @@ export default function Home() {
 
           {/* Action Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-1 lg:gap-4">
+            {/* PDF Upload Card */}
+            <PDFUploadModal open={isPDFUploadPopoverOpen} onOpenChange={setPDFUploadPopoverOpen}>
+              <PopoverTrigger asChild>
+                <button className="cursor-pointer group relative flex flex-col items-start p-6 rounded-xl border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:scale-[1.02] text-left">
+                  <div className="mb-3 p-3 rounded-lg bg-purple-500/10 text-purple-600 group-hover:bg-purple-500/20 transition-colors">
+                    <FileText className="size-6" />
+                  </div>
+                  <h3 className="font-semibold text-base mb-1">Upload PDF</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Extract & analyze documents
+                  </p>
+                </button>
+              </PopoverTrigger>
+            </PDFUploadModal>
+
             {/* Image Upload Card */}
             <ImageUpload open={isImageUploadPopoverOpen} onOpenChange={setImageUploadPopoverOpen}>
               <PopoverTrigger asChild>

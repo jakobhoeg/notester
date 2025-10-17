@@ -8,6 +8,7 @@ import { useNotes } from "@/app/hooks/useNotes"
 import { useImageAnalysis } from "@/app/hooks/useImageAnalysis"
 import { useTranscription } from "@/app/hooks/useTranscription"
 import { useAIGeneration } from "@/app/hooks/useAIGeneration"
+import { usePDFNoteGeneration } from "@/app/hooks/usePDFNoteGeneration"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
 import { TransformDropdown } from "../components/transformation-panel"
@@ -51,6 +52,7 @@ export default function NotePage() {
   const { analyzeImages } = useImageAnalysis()
   const { transcribeAudio } = useTranscription()
   const { generateContent } = useAIGeneration()
+  const { generateNoteFromPDF } = usePDFNoteGeneration()
   const params = useParams<{ id: string }>();
   const id = params.id as string;
   const { data: note, isLoading } = useNoteQuery(id)
@@ -67,12 +69,14 @@ export default function NotePage() {
   const [analysisText, setAnalysisText] = useState("")
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [isGeneratingAI, setIsGeneratingAI] = useState(false)
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
 
   const titleDebounceTimeout = useRef<NodeJS.Timeout | null>(null)
   const contentDebounceTimeout = useRef<NodeJS.Timeout | null>(null)
   const editorRef = useRef<EditorInstance | null>(null)
   const hasStartedTranscription = useRef(false)
   const hasStartedAIGeneration = useRef(false)
+  const hasStartedPDFGeneration = useRef(false)
 
   useEffect(() => {
     if (note) {
@@ -251,6 +255,16 @@ export default function NotePage() {
     }
   }, [note, searchParams])
 
+  // Handle streaming PDF note generation from URL parameters
+  useEffect(() => {
+    const shouldStreamPDFAnalysis = searchParams.get('streamPDFAnalysis') === 'true'
+
+    if (shouldStreamPDFAnalysis && note && !hasStartedPDFGeneration.current) {
+      hasStartedPDFGeneration.current = true
+      startPDFNoteGeneration()
+    }
+  }, [note, searchParams])
+
   const startAudioTranscription = async () => {
     if (!note) return
 
@@ -402,6 +416,95 @@ export default function NotePage() {
     }
   }
 
+  const startPDFNoteGeneration = async () => {
+    if (!note) return
+
+    setIsGeneratingPDF(true)
+
+    try {
+      // Retrieve PDF text and metadata from sessionStorage
+      const pdfText = sessionStorage.getItem(`pdf_text_${note.id}`)
+      const pdfMetadataStr = sessionStorage.getItem(`pdf_metadata_${note.id}`)
+      const customPrompt = sessionStorage.getItem(`pdf_prompt_${note.id}`) || undefined
+
+      if (!pdfText) {
+        toast.error("No PDF text found to process")
+        return
+      }
+
+      const pdfMetadata = pdfMetadataStr ? JSON.parse(pdfMetadataStr) : undefined
+
+      // Generate notes from PDF text
+      const result = await generateNoteFromPDF({
+        pdfText,
+        pdfMetadata,
+        customPrompt,
+        generateTitle: true,
+        showToasts: false,
+        onProgress: (status) => {
+          console.log(`PDF note generation progress: ${status}`)
+        }
+      })
+
+      if (result && result.content) {
+        // Parse the markdown content into proper JSONContent
+        const generatedContent = markdownToJSONContent(result.content)
+
+        // Update the note content with the generated content
+        const updatedContent = { ...note.content }
+        const placeholderIndex = updatedContent.content?.findIndex(
+          node => node.type === 'paragraph' &&
+            node.content?.[0]?.type === 'text' &&
+            (node.content[0].text?.includes('Analyzing PDF') ||
+              node.content[0].text?.includes('generating notes'))
+        )
+
+        if (placeholderIndex !== undefined && placeholderIndex >= 0 && updatedContent.content) {
+          // Replace the placeholder with the parsed generated content
+          // Remove the placeholder and insert all parsed content nodes
+          updatedContent.content.splice(
+            placeholderIndex,
+            1,
+            ...(generatedContent.content || [])
+          )
+
+          setEditableContent(updatedContent)
+
+          // Update the note in the database
+          await updateNote({
+            id: note.id,
+            updates: {
+              content: updatedContent,
+              title: result.title || note.title
+            }
+          })
+
+          // Update the title if we got a new one
+          if (result.title) {
+            setEditableTitle(result.title)
+          }
+
+          toast.success("PDF notes generated successfully!")
+        }
+      }
+
+      // Clean up sessionStorage
+      sessionStorage.removeItem(`pdf_text_${note.id}`)
+      sessionStorage.removeItem(`pdf_metadata_${note.id}`)
+      sessionStorage.removeItem(`pdf_prompt_${note.id}`)
+    } catch (error) {
+      console.error('Error during PDF note generation:', error)
+      toast.error("Failed to generate notes from PDF")
+    } finally {
+      setIsGeneratingPDF(false)
+      // Clean up URL parameters
+      const newUrl = new URL(window.location.href)
+      newUrl.searchParams.delete('streamPDFAnalysis')
+      window.history.replaceState({}, '', newUrl.toString())
+      hasStartedPDFGeneration.current = false
+    }
+  }
+
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value
     setEditableTitle(newTitle)
@@ -473,6 +576,24 @@ export default function NotePage() {
     setEditableContent(preTransformationContent)
     setIsTransformationPendingConfirmation(false)
     setTransformedText("")
+  }
+
+  const handleAIContentUpdate = async (newContent: JSONContent) => {
+    console.log('[handleAIContentUpdate] AI requested content update:', newContent);
+    setEditableContent(newContent)
+
+    if (contentDebounceTimeout.current) {
+      clearTimeout(contentDebounceTimeout.current)
+    }
+
+    if (note) {
+      console.log('[handleAIContentUpdate] Updating note in database, id:', note.id);
+      await updateNote({
+        id: note.id,
+        updates: { content: newContent },
+      })
+      console.log('[handleAIContentUpdate] Note updated successfully');
+    }
   }
 
   const handleEditorCreate = (editor: EditorInstance) => {
@@ -638,7 +759,7 @@ export default function NotePage() {
                 <NoteSkeleton />
               ) : (
                 <div className="min-h-full relative">
-                  {isStreaming || isTransformationPendingConfirmation || isAnalyzingImages || isTranscribing || isGeneratingAI ? (
+                  {isStreaming || isTransformationPendingConfirmation || isAnalyzingImages || isTranscribing || isGeneratingAI || isGeneratingPDF ? (
                     <div
                       className={cn(
                         "whitespace-pre-line rounded p-2",
@@ -647,7 +768,7 @@ export default function NotePage() {
                         "border-2 border-primary-foreground bg-muted/10 animate-pulse",
                       )}
                     >
-                      {isAnalyzingImages || isTranscribing || isGeneratingAI ? (
+                      {isAnalyzingImages || isTranscribing || isGeneratingAI || isGeneratingPDF ? (
                         <div className="space-y-4">
                           <TailwindAdvancedEditor
                             key={id}
@@ -707,7 +828,11 @@ export default function NotePage() {
 
       {/* Right Sidebar */}
       <div className="group/sidebar-wrapper has-[data-side=right]:ml-0 h-full">
-        <SidebarAiChat key={note?.id} noteContent={note?.content || {}} />
+        <SidebarAiChat
+          key={note?.id}
+          noteContent={editableContent}
+          onContentUpdate={handleAIContentUpdate}
+        />
       </div>
     </div>
   )
