@@ -65,7 +65,7 @@ export default function PDFUploadModal({
   const [pdfMetadata, setPdfMetadata] = useState<any>(null);
 
   const router = useRouter();
-  const { addNote } = useNotes();
+  const { addNote, addGenerationData } = useNotes();
   const { extractTextFromPDF } = usePDFProcessing();
 
   const [
@@ -150,24 +150,17 @@ export default function PDFUploadModal({
       const newNote = await addNote({
         title: "Generating PDF Notes...",
         content: initialNoteContent,
+        isGenerating: true
       });
 
-      // Navigate to the note page with PDF generation params
-      const params = new URLSearchParams({
-        streamPDFAnalysis: "true",
+      // Store PDF data in PGlite
+      await addGenerationData(newNote.id, 'pdf', {
+        pdfText: extractedText,
+        pdfMetadata,
+        customPrompt: message.text?.trim() || null
       });
 
-      // Store PDF text and metadata temporarily (for the note page to pick up)
-      if (typeof window !== "undefined") {
-        sessionStorage.setItem(`pdf_text_${newNote.id}`, extractedText);
-        sessionStorage.setItem(`pdf_metadata_${newNote.id}`, JSON.stringify(pdfMetadata));
-
-        if (message.text?.trim()) {
-          sessionStorage.setItem(`pdf_prompt_${newNote.id}`, message.text.trim());
-        }
-      }
-
-      router.push(`/note/${newNote.id}?${params.toString()}`);
+      router.push(`/note/${newNote.id}`);
       toast.success("Note created! AI is generating content from your PDF...");
       onOpenChange(false);
 

@@ -15,6 +15,15 @@ export interface Note {
   content: JSONContent;
   preview: string;
   timestamp: string;
+  isGenerating: boolean;
+}
+
+export interface GenerationData {
+  id: string;
+  note_id: string;
+  generation_type: 'audio' | 'pdf' | 'image' | 'ai';
+  data: Record<string, any>;
+  created_at: string;
 }
 
 // Helper function to create JSONContent from text
@@ -58,8 +67,9 @@ export const useNotes = () => {
         content: string;
         preview: string;
         timestamp: string;
+        isGenerating: boolean;
       }>(`
-        SELECT id, title, content, preview, timestamp 
+        SELECT id, title, content, preview, timestamp, "isGenerating" 
         FROM notes 
         ORDER BY timestamp DESC
       `);
@@ -90,8 +100,8 @@ export const useNotes = () => {
     enabled: !!db && isDbReady,
   });
 
-  const addNoteMutation = useMutation<Note, Error, { title: string; content?: JSONContent }>({
-    mutationFn: async ({ title, content = createEmptyContent() }) => {
+  const addNoteMutation = useMutation<Note, Error, { title: string; content?: JSONContent; isGenerating?: boolean }>({
+    mutationFn: async ({ title, content = createEmptyContent(), isGenerating = false }) => {
       const validatedContent = validateAndSanitizeContent(content);
       const newNote: Note = {
         id: uuidv4(),
@@ -99,19 +109,21 @@ export const useNotes = () => {
         content: validatedContent,
         preview: extractPreviewFromContent(validatedContent),
         timestamp: new Date().toISOString(),
+        isGenerating,
       };
 
       if (!db || !isDbReady) throw new Error("Database not initialized");
 
       await db.query(
-        `INSERT INTO notes (id, title, content, preview, timestamp) 
-         VALUES ($1, $2, $3, $4, $5)`,
+        `INSERT INTO notes (id, title, content, preview, timestamp, "isGenerating") 
+         VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           newNote.id,
           newNote.title,
           newNote.content, // JSONB column can accept objects directly
           newNote.preview,
-          newNote.timestamp
+          newNote.timestamp,
+          newNote.isGenerating
         ]
       );
       return newNote;
@@ -138,8 +150,9 @@ export const useNotes = () => {
           content: string;
           preview: string;
           timestamp: string;
+          isGenerating: boolean;
         }>(
-          `SELECT id, title, content, preview, timestamp 
+          `SELECT id, title, content, preview, timestamp, "isGenerating" 
            FROM notes 
            WHERE id = $1`,
           [id]
@@ -197,8 +210,9 @@ export const useNotes = () => {
         content: string;
         preview: string;
         timestamp: string;
+        isGenerating: boolean;
       }>(
-        `SELECT id, title, content, preview, timestamp 
+        `SELECT id, title, content, preview, timestamp, "isGenerating" 
          FROM notes 
          WHERE id = $1`,
         [id]
@@ -267,6 +281,11 @@ export const useNotes = () => {
         values.push(updates.timestamp);
       }
 
+      if (updates.isGenerating !== undefined) {
+        fields.push(`"isGenerating" = $${paramIndex++}`);
+        values.push(updates.isGenerating);
+      }
+
       if (fields.length === 0) return;
 
       values.push(id);
@@ -288,6 +307,58 @@ export const useNotes = () => {
     },
   });
 
+  // Generation data methods
+  const addGenerationData = useCallback(
+    async (noteId: string, type: GenerationData['generation_type'], data: Record<string, any>) => {
+      if (!db || !isDbReady) throw new Error("Database not initialized");
+      const id = uuidv4();
+      await db.query(
+        `INSERT INTO generation_data (id, note_id, generation_type, data) 
+         VALUES ($1, $2, $3, $4)`,
+        [id, noteId, type, data]
+      );
+      return id;
+    },
+    [db, isDbReady]
+  );
+
+  const getGenerationData = useCallback(
+    async (noteId: string): Promise<GenerationData | undefined> => {
+      if (!db || !isDbReady) return undefined;
+      const result = await db.query<{
+        id: string;
+        note_id: string;
+        generation_type: string;
+        data: any;
+        created_at: string;
+      }>(
+        `SELECT id, note_id, generation_type, data, created_at 
+         FROM generation_data 
+         WHERE note_id = $1 
+         LIMIT 1`,
+        [noteId]
+      );
+
+      const row = result.rows[0];
+      if (!row) return undefined;
+
+      return {
+        ...row,
+        generation_type: row.generation_type as GenerationData['generation_type'],
+        data: typeof row.data === 'string' ? JSON.parse(row.data) : row.data
+      };
+    },
+    [db, isDbReady]
+  );
+
+  const deleteGenerationData = useCallback(
+    async (noteId: string) => {
+      if (!db || !isDbReady) return;
+      await db.query(`DELETE FROM generation_data WHERE note_id = $1`, [noteId]);
+    },
+    [db, isDbReady]
+  );
+
   return {
     notes,
     isLoading: isLoading || !isDbReady,
@@ -296,5 +367,8 @@ export const useNotes = () => {
     updateNote: updateNoteMutation.mutateAsync,
     deleteNote: deleteNoteMutation.mutateAsync,
     useNoteQuery,
+    addGenerationData,
+    getGenerationData,
+    deleteGenerationData,
   };
 };

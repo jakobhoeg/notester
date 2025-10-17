@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 
 export function UploadModal({ open, onOpenChange, children }: { open: boolean; onOpenChange: (open: boolean) => void; children: React.ReactNode }) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const { addNote } = useNotes();
+  const { addNote, addGenerationData } = useNotes();
   const [isDragActive, setIsDragActive] = useState(false);
   const router = useRouter();
 
@@ -64,18 +64,18 @@ export function UploadModal({ open, onOpenChange, children }: { open: boolean; o
                 ]
               }
             ]
-          }
+          },
+          isGenerating: true
         });
 
-        // Store audio in localStorage temporarily
-        localStorage.setItem(`audio_${newNote.id}`, audioBase64);
-
-        // Navigate immediately with transcription params
-        const params = new URLSearchParams({
-          streamTranscription: 'true'
+        // Store audio data in PGlite
+        await addGenerationData(newNote.id, 'audio', {
+          audioBase64,
+          fileName: file.name
         });
 
-        router.push(`/note/${newNote.id}?${params.toString()}`);
+        // Navigate immediately without URL params
+        router.push(`/note/${newNote.id}`);
         toast.success("Note created! Transcription will stream in shortly...");
         onOpenChange(false);
       } catch (err) {

@@ -135,7 +135,7 @@ export default function ImageUpload({ open, onOpenChange, children }: { open: bo
   const [processingStatus, setProcessingStatus] = useState("")
 
   const router = useRouter()
-  const { addNote } = useNotes()
+  const { addNote, addGenerationData } = useNotes()
 
   const [
     { files, isDragging, errors },
@@ -222,21 +222,18 @@ export default function ImageUpload({ open, onOpenChange, children }: { open: bo
       setProcessingStatus("Creating note...")
       const newNote = await addNote({
         title: "Image Analysis", // Temporary title
-        content: initialNoteContent
+        content: initialNoteContent,
+        isGenerating: true
       })
+
+      // Store image data in PGlite
+      await addGenerationData(newNote.id, 'image', {
+        customPrompt: message.text?.trim() || null,
+        imageCount: imageFiles.length
+      });
 
       // Navigate to the note page immediately
-      const analysisParams = new URLSearchParams({
-        streamAnalysis: 'true',
-        imageCount: imageFiles.length.toString()
-      })
-
-      // Only add custom prompt if user provided one
-      if (message.text?.trim()) {
-        analysisParams.set('customPrompt', message.text.trim())
-      }
-
-      router.push(`/note/${newNote.id}?${analysisParams.toString()}`)
+      router.push(`/note/${newNote.id}`)
 
       toast.success("Note created! Analysis will stream in shortly...")
     } catch (err) {

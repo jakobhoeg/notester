@@ -34,7 +34,7 @@ export function RecordingModal({ open, onOpenChange, children }: RecordingModalP
     resumeRecording,
     resetRecording,
   } = useAudioRecording();
-  const { addNote } = useNotes();
+  const { addNote, addGenerationData } = useNotes();
   const router = useRouter();
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -90,18 +90,18 @@ export function RecordingModal({ open, onOpenChange, children }: RecordingModalP
               ]
             }
           ]
-        }
+        },
+        isGenerating: true
       });
 
-      // Store audio in localStorage temporarily for the note page to access
-      localStorage.setItem(`audio_${newNote.id}`, audioBase64);
-
-      // Navigate immediately with transcription params
-      const params = new URLSearchParams({
-        streamTranscription: 'true'
+      // Store audio data in PGlite
+      await addGenerationData(newNote.id, 'audio', {
+        audioBase64,
+        fileName: `recording.${audioBlob.type.split('/')[1]}`
       });
 
-      router.push(`/note/${newNote.id}?${params.toString()}`);
+      // Navigate immediately without URL params
+      router.push(`/note/${newNote.id}`);
       toast.success("Note created! Transcription will stream in shortly...");
       onOpenChange(false);
     } catch (err) {
