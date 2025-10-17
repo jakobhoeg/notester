@@ -11,6 +11,15 @@ import { builtInAI, BuiltInAIUIMessage } from "@built-in-ai/core";
 import { JSONContent } from "novel";
 import { useNoteContentStore } from "../stores/note-content-store";
 import { z } from "zod";
+import { FileEditIcon, FilePlusIcon, FileTextIcon, GlobeIcon, Trash2Icon } from "lucide-react";
+
+export const availableTools = [
+  { name: 'webSearch', icon: GlobeIcon, description: 'Search the web for current information' },
+  { name: 'rewriteNote', icon: FileEditIcon, description: 'Completely rewrite the entire note' },
+  { name: 'appendToNote', icon: FilePlusIcon, description: 'Append text to the end of the note' },
+  { name: 'replaceText', icon: FileTextIcon, description: 'Replace specific text in the note' },
+  { name: 'deleteText', icon: Trash2Icon, description: 'Delete specific text from the note' },
+];
 
 /**
  * Client-side chat transport AI SDK implementation that handles AI model communication

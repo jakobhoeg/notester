@@ -4,7 +4,7 @@ import { Copy, EraserIcon, PanelRight, PlusIcon, RefreshCcw } from 'lucide-react
 import { cn } from '@/lib/utils'
 import { useChat } from "@ai-sdk/react";
 import { BuiltInAIUIMessage } from '@built-in-ai/core';
-import { ClientSideChatTransport } from '../util/client-side-chat-transport';
+import { availableTools, ClientSideChatTransport } from '../util/client-side-chat-transport';
 import { useNoteContentStore } from '../stores/note-content-store';
 import { toast } from 'sonner';
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
@@ -19,6 +19,9 @@ import { Kbd, KbdKey } from '@/components/ui/shadcn-io/kbd';
 import { JSONContent } from 'novel';
 import { lastAssistantMessageIsCompleteWithToolCalls } from 'ai';
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from '@/components/ai-elements/tool';
+import { Shimmer } from '@/components/ai-elements/shimmer';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { Badge } from '@/components/ui/badge';
 
 interface SidebarAIChatProps {
   noteContent: JSONContent,
@@ -64,7 +67,12 @@ export default function SidebarAiChat({ noteContent, onContentUpdate }: SidebarA
   };
 
   return (
-    <SidebarProvider className="h-full max-h-[calc(100vh)] overflow-hidden">
+    <SidebarProvider
+      className="h-full max-h-[calc(100vh)] overflow-hidden"
+      style={{
+        "--sidebar-width": "24rem",
+      } as React.CSSProperties}
+    >
       <Sidebar
         collapsible="icon"
         side="right"
@@ -185,7 +193,7 @@ export default function SidebarAiChat({ noteContent, onContentUpdate }: SidebarA
                         m.parts.filter((part) => part.type === "text").length === 0 && (
                           <div className="flex gap-1 items-center text-muted-foreground mt-2">
                             <Loader className="size-4" />
-                            <span className="text-sm">Thinking...</span>
+                            <Shimmer duration={1}>Thinking...</Shimmer>
                           </div>
                         )}
 
@@ -268,10 +276,43 @@ export default function SidebarAiChat({ noteContent, onContentUpdate }: SidebarA
                 className=" dark:bg-card min-h-12"
               />
               <PromptInputToolbar>
-                {/* <PromptInputTools>
-                </PromptInputTools> */}
-                <div className="flex items-center gap-2 w-full justify-end">
+                <PromptInputTools>
+                  <HoverCard openDelay={0}>
+                    <HoverCardTrigger asChild>
+                      <Button variant="ghost" size="sm" className="text-muted-foreground">
+                        <GlobeIcon size={16} />
+                        <span>webSearch <Badge variant="outline">+{availableTools.length - 1} tools</Badge></span>
+                      </Button>
+                    </HoverCardTrigger>
+                    <HoverCardContent align="start" className="w-72">
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="text-sm font-semibold mb-1">Available Tools</h4>
+                          <p className="text-xs text-muted-foreground">
+                            List of tools available for the AI model
+                          </p>
+                        </div>
+                        <div className="space-y-2">
+                          {availableTools.map((tool) => {
+                            const Icon = tool.icon;
+                            return (
+                              <div key={tool.name} className="flex items-start gap-2 text-sm">
+                                <Icon className="size-4 mt-0.5 text-muted-foreground shrink-0" />
+                                <div>
+                                  <div className="font-medium">{tool.name}</div>
+                                  <div className="text-xs text-muted-foreground">{tool.description}</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </HoverCardContent>
+                  </HoverCard>
+                </PromptInputTools>
+                <div className="flex items-center gap-2">
                   <PromptInputSubmit
+                    size="icon"
                     disabled={
                       status === "ready" &&
                       !input.trim()
