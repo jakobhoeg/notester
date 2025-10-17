@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Sidebar, SidebarContent, SidebarGroup, SidebarHeader, SidebarMenuButton, SidebarProvider, SidebarTrigger } from '@/components/providers/sidebar'
-import { Copy, EraserIcon, PanelRight, PlusIcon, RefreshCcw } from 'lucide-react'
+import { Copy, EraserIcon, GlobeIcon, PanelRight, PlusIcon, RefreshCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useChat } from "@ai-sdk/react";
 import { BuiltInAIUIMessage } from '@built-in-ai/core';
