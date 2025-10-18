@@ -297,7 +297,7 @@ export function LeftSidebar() {
                                           className="flex cursor-pointer items-center gap-2"
                                         >
                                           <Trash2 className="h-4 w-4" />
-                                          <span>Delete Document</span>
+                                          <span>Delete note</span>
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>
