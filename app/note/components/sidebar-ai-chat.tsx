@@ -123,10 +123,10 @@ export default function SidebarAiChat({ noteContent, onContentUpdate }: SidebarA
                     key={m.id}
                   >
                     <MessageContent>
-                      {/* Handle download progress parts first */}
-                      {m.parts
-                        .filter((part) => part.type === "data-modelDownloadProgress")
-                        .map((part, partIndex) => {
+                      {/* Render parts in their natural order */}
+                      {m.parts.map((part, partIndex) => {
+                        // Handle download progress parts
+                        if (part.type === "data-modelDownloadProgress") {
                           // Only show if message is not empty (hiding completed/cleared progress)
                           if (!part.data.message) return null;
 
@@ -147,12 +147,10 @@ export default function SidebarAiChat({ noteContent, onContentUpdate }: SidebarA
                                 )}
                             </div>
                           );
-                        })}
+                        }
 
-                      {/* Handle tool parts */}
-                      {m.parts
-                        .filter((part) => part.type.startsWith("tool-"))
-                        .map((part, partIndex) => {
+                        // Handle tool parts
+                        if (part.type.startsWith("tool-")) {
                           // Type guard to ensure part is a ToolUIPart
                           if (!('state' in part)) return null;
 
@@ -177,14 +175,15 @@ export default function SidebarAiChat({ noteContent, onContentUpdate }: SidebarA
                               </ToolContent>
                             </Tool>
                           );
-                        })}
+                        }
 
-                      {/* Handle text parts */}
-                      {m.parts
-                        .filter((part) => part.type === "text")
-                        .map((part, partIndex) => (
-                          <Response key={partIndex}>{part.text}</Response>
-                        ))}
+                        // Handle text parts
+                        if (part.type === "text") {
+                          return <Response key={partIndex}>{part.text}</Response>;
+                        }
+
+                        return null;
+                      })}
 
                       {/* Show loading indicator if this is the last assistant message and it's streaming with no text yet */}
                       {(m.role === "assistant" || m.role === "system") &&
