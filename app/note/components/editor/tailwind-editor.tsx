@@ -60,8 +60,8 @@ const TailwindAdvancedEditor = ({ content, onUpdate, onEditorCreate }: TailwindA
   }, [content]);
 
   return (
-    <div className="relative w-full max-w-screen-lg">
-      <div className="flex absolute right-0 -top-4 z-10 mb-5 gap-2">
+    <div className="relative w-full overflow-visible">
+      <div className="flex absolute right-0 top-0 z-10 mb-5 gap-2">
         <div className="rounded-lg bg-secondary px-2 py-1 text-sm text-muted-foreground">{saveStatus}</div>
         {charsCount > 0 && (
           <div className="rounded-lg bg-secondary px-2 py-1 text-sm text-muted-foreground">
@@ -74,14 +74,14 @@ const TailwindAdvancedEditor = ({ content, onUpdate, onEditorCreate }: TailwindA
           immediatelyRender={false}
           initialContent={content}
           extensions={extensions}
-          className="w-full p-2"
+          className="w-full pt-8 pb-2 overflow-visible"
           editorProps={{
             handleDOMEvents: {
               keydown: (_view, event) => handleCommandNavigation(event),
             },
             attributes: {
               class:
-                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full overflow-hidden",
+                "prose prose-lg dark:prose-invert prose-headings:font-title font-default focus:outline-none max-w-full overflow-visible",
             },
           }}
           onCreate={({ editor }) => {

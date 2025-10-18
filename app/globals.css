@@ -12,7 +12,7 @@
   --popover-foreground: oklch(0.2435 0 0);
   --primary: oklch(0.4341 0.0392 41.9938);
   --primary-foreground: oklch(1.0000 0 0);
-  --secondary: oklch(0.9200 0.0651 74.3695);
+  --secondary: oklch(0.9200 0.0351 74.3695);
   --secondary-foreground: oklch(0.3499 0.0685 40.8288);
   --muted: oklch(0.9521 0 0);
   --muted-foreground: oklch(0.5032 0 0);
@@ -50,9 +50,9 @@
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
-  --loading-start: #eff6ff;
-  --loading-mid: #2563eb60;
-  --loading-end: #eff6ff;
+  --loading-start: #fffeef;
+  --loading-mid: #b8a55360;
+  --loading-end: #fffeef;
 }
 
 .dark {
@@ -100,9 +100,9 @@
   --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 4px 6px -1px hsl(0 0% 0% / 0.10);
   --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 8px 10px -1px hsl(0 0% 0% / 0.10);
   --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
-  --loading-start: #172554;
-  --loading-mid: #4c9dff60;
-  --loading-end: #172554;
+  --loading-start: #3b320560;
+  --loading-mid: #beac5860;
+  --loading-end: #3b320560;
 }
 
 @theme inline {

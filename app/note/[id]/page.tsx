@@ -27,6 +27,7 @@ import TailwindAdvancedEditor from "../components/editor/tailwind-editor"
 import { createEmptyContent } from "@/lib/utils"
 import SidebarAiChat from "../components/sidebar-ai-chat"
 import { DockFooter } from "@/components/dock-footer"
+import { format } from "date-fns"
 
 const DELAY_SAVE = 1000
 
@@ -725,32 +726,37 @@ export default function NotePage() {
   }
 
   return (
-    <div className="relative flex h-full w-full bg-background max-h-[calc(100vh-0px)] overflow-hidden">
-      <div className="relative flex flex-1 flex-col min-h-0">
+    <div className="relative flex h-full w-full bg-background max-h-[calc(100vh-0px)]">
+      <div className="relative flex flex-1 flex-col min-h-0 overflow-x-visible">
         {/* Main Content Container */}
         <div className="flex flex-col h-full w-full min-h-0">
           {/* Title Section - Fixed height */}
-          <div className="flex-shrink-0 p-4 flex items-center w-full max-w-4xl mx-auto">
+          <div className="flex-shrink-0 px-4 pt-4 pb-2 flex items-center w-full max-w-4xl mx-auto">
             {isLoading || !isDbReady ? (
               <Skeleton className="h-8 w-3/4" />
             ) : (
-              <input
-                className="text-2xl font-bold bg-transparent border-none outline-none w-full"
-                value={editableTitle}
-                onChange={handleTitleChange}
-                aria-label="Edit title"
-                spellCheck={true}
-              />
+              <div className="w-full flex flex-col">
+                <input
+                  className="text-2xl font-bold bg-transparent border-none outline-none w-full"
+                  value={editableTitle}
+                  onChange={handleTitleChange}
+                  aria-label="Edit title"
+                  spellCheck={true}
+                />
+                <p className="text-sm text-muted-foreground">
+                  {note?.timestamp ? format(new Date(note.timestamp), "EEE, d MMM yyyy") : ""}
+                </p>
+              </div>
             )}
           </div>
 
           {/* Main Content - Scrollable area */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <main className="h-full overflow-y-auto p-4 w-full max-w-4xl mx-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <main className="min-h-full px-4 pt-2 pb-2 w-full max-w-4xl mx-auto">
               {!isDbReady || isLoading ? (
                 <NoteSkeleton />
               ) : (
-                <div className="min-h-full relative">
+                <div className="min-h-full relative pb-8">
                   {isStreaming || isTransformationPendingConfirmation || isAnalyzingImages || isTranscribing || isGeneratingAI || isGeneratingPDF ? (
                     <div
                       className={cn(
@@ -802,7 +808,7 @@ export default function NotePage() {
           </div>
 
           {/* Footer Section - Fixed at bottom */}
-          <div className="flex-shrink-0 pt-6 pb-2 w-full flex flex-col gap-2">
+          <div className="flex-shrink-0 pb-2 w-full flex flex-col gap-2">
             <DockFooter
               onTransform={handleTransform}
               isStreaming={isStreaming}

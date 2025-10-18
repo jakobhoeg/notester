@@ -23,7 +23,18 @@ const GenerativeMenuSwitch = ({ children, open, onOpenChange }: GenerativeMenuSw
   return (
     <EditorBubble
       tippyOptions={{
-        placement: open ? "bottom-start" : "top",
+        placement: "auto",
+        appendTo: () => document.body,
+        popperOptions: {
+          modifiers: [
+            {
+              name: 'preventOverflow',
+              options: {
+                boundary: 'viewport',
+              },
+            },
+          ],
+        },
         onHidden: () => {
           onOpenChange(false);
           // Double cleanup to ensure highlights are always removed
@@ -31,7 +42,7 @@ const GenerativeMenuSwitch = ({ children, open, onOpenChange }: GenerativeMenuSw
           editor!.chain().unsetHighlight().run();
         },
       }}
-      className="flex w-fit max-w-[90vw] overflow-hidden rounded-md border border-muted bg-background shadow-xl"
+      className="flex w-fit max-w-[90vw] overflow-visible rounded-md border border-muted bg-background shadow-xl z-[100]"
     >
       {open && <AISelector open={open} onOpenChange={onOpenChange} />}
       {!open && (
