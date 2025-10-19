@@ -4,7 +4,7 @@ import { Copy, EraserIcon, GlobeIcon, PanelRight, PlusIcon, RefreshCcw } from 'l
 import { cn } from '@/lib/utils'
 import { useChat } from "@ai-sdk/react";
 import { BuiltInAIUIMessage } from '@built-in-ai/core';
-import { availableTools, ClientSideChatTransport } from '../util/client-side-chat-transport';
+import { ClientSideChatTransport } from '../util/client-side-chat-transport';
 import { useNoteContentStore } from '../stores/note-content-store';
 import { toast } from 'sonner';
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
@@ -22,15 +22,20 @@ import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from '@/componen
 import { Shimmer } from '@/components/ai-elements/shimmer';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Badge } from '@/components/ui/badge';
+import { useChats } from '@/app/hooks/useChats';
+import { availableTools } from '@/lib/tools';
 
 interface SidebarAIChatProps {
   noteContent: JSONContent,
   onContentUpdate?: (content: JSONContent) => void,
+  noteId?: string,
 }
 
-export default function SidebarAiChat({ noteContent, onContentUpdate }: SidebarAIChatProps) {
+export default function SidebarAiChat({ noteContent, onContentUpdate, noteId }: SidebarAIChatProps) {
   const [input, setInput] = useState("");
   const setCurrentNoteContent = useNoteContentStore((state) => state.setCurrentNoteContent);
+  const { useChatQuery, saveChat, clearChat } = useChats();
+  const { data: savedChat } = useChatQuery(noteId || '');
 
   // Update the store whenever noteContent prop changes
   useEffect(() => {
@@ -43,9 +48,24 @@ export default function SidebarAiChat({ noteContent, onContentUpdate }: SidebarA
       onError(error) {
         toast.error(error.message);
       },
-      experimental_throttle: 50,
+      // experimental_throttle: 50,
       sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
+      // Save chat after assistant completes response
+      onFinish: ({ messages }) => {
+        if (noteId && messages.length > 0) {
+          saveChat({ noteId, messages }).catch((error) => {
+            console.error('Failed to save chat after assistant response:', error);
+          });
+        }
+      },
     });
+
+  // Load saved chat messages when component mounts or noteId changes
+  useEffect(() => {
+    if (savedChat && savedChat.messages && savedChat.messages.length > 0) {
+      setMessages(savedChat.messages);
+    }
+  }, [savedChat, noteId, setMessages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,8 +115,17 @@ export default function SidebarAiChat({ noteContent, onContentUpdate }: SidebarA
           <Button
             size='sm'
             variant='outline'
-            onClick={() => {
-              setMessages([])
+            onClick={async () => {
+              setMessages([]);
+              if (noteId) {
+                try {
+                  await clearChat(noteId);
+                  toast.success('Chat cleared');
+                } catch (error) {
+                  console.error('Failed to clear chat:', error);
+                  toast.error('Failed to clear chat');
+                }
+              }
             }}
             className='text-xs group-data-[collapsible=icon]:hidden'
           >
