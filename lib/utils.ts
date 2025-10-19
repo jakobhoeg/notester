@@ -489,34 +489,6 @@ export function extractTextFromContent(content: JSONContent): string {
   return content.content.map(extractText).join("\n");
 }
 
-// Helper function to prepend text to existing JSONContent
-export function prependTextToContent(existingContent: JSONContent, newText: string): JSONContent {
-  if (!newText.trim()) {
-    return existingContent;
-  }
-
-  // Ensure we have valid existing content
-  const validatedContent = validateAndSanitizeContent(existingContent);
-
-  // Convert the new text to JSONContent (supports markdown)
-  const newContent = markdownToJSONContent(newText);
-
-  // Prepend the new content
-  const updatedContent = [
-    ...(newContent.content || []),
-    {
-      type: "paragraph",
-      content: []
-    },
-    ...(validatedContent.content || [])
-  ];
-
-  return {
-    type: "doc",
-    content: updatedContent
-  };
-}
-
 // Helper function to replace text in JSONContent
 export function replaceTextInContent(
   content: JSONContent,

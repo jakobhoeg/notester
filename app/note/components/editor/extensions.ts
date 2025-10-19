@@ -227,7 +227,7 @@ const tableCell = TableCell.configure({
 const aiAutocomplete = AIAutocompleteExtension.configure({
   debounceMs: 1000,
   minChars: 10,
-  maxSuggestionLength: 100,
+  maxSuggestionLength: 250,
   enabled: true,
 });
 

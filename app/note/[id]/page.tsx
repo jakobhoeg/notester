@@ -828,6 +828,7 @@ export default function NotePage() {
       <div className="group/sidebar-wrapper has-[data-side=right]:ml-0 h-full">
         <SidebarAiChat
           key={note?.id}
+          noteId={note?.id}
           noteContent={editableContent}
           onContentUpdate={handleAIContentUpdate}
         />

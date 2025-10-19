@@ -55,9 +55,9 @@ export default function PDFUploadModal({
   onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
 }) {
-  const maxSizeMB = 10;
-  const maxSize = maxSizeMB * 1024 * 1024; // 10MB
-  const maxFiles = 1; // Only one PDF at a time
+  const maxSizeMB = 50;
+  const maxSize = maxSizeMB * 1024 * 1024;
+  const maxFiles = 1;
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState("");
@@ -86,7 +86,6 @@ export default function PDFUploadModal({
     maxSize,
     accept: "application/pdf,.pdf",
     onFilesAdded: async (newFiles) => {
-      // Auto-extract text when file is added
       const pdfFile = newFiles[0].file;
       if (pdfFile instanceof File) {
         await handleExtractText(pdfFile);
