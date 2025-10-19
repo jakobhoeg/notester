@@ -22,7 +22,7 @@ const loadPDFJS = async () => {
 interface PDFProcessingOptions {
   onProgress?: (status: string) => void;
   showToasts?: boolean;
-  maxPages?: number; // Limit number of pages to process
+  maxPages?: number;
 }
 
 interface PDFMetadata {
@@ -48,13 +48,12 @@ export function usePDFProcessing() {
     const {
       onProgress,
       showToasts = true,
-      maxPages = 100, // Limit to 100 pages by default
+      maxPages = 100,
     } = options;
 
     setIsProcessing(true);
 
     try {
-      // Load PDF.js library
       const pdfjs = await loadPDFJS();
       if (!pdfjs) {
         const errorMsg = "Failed to load PDF library.";
@@ -62,15 +61,13 @@ export function usePDFProcessing() {
         throw new Error(errorMsg);
       }
 
-      // Validate file
       if (!file.type.includes("pdf") && !file.name.toLowerCase().endsWith(".pdf")) {
         const errorMsg = "Please upload a valid PDF file.";
         if (showToasts) toast.error(errorMsg);
         throw new Error(errorMsg);
       }
 
-      // Check file size (10MB limit)
-      const maxSize = 10 * 1024 * 1024; // 10MB
+      const maxSize = 50 * 1024 * 1024;
       if (file.size > maxSize) {
         const errorMsg = "PDF file is too large. Maximum size is 10MB.";
         if (showToasts) toast.error(errorMsg);
@@ -81,10 +78,8 @@ export function usePDFProcessing() {
       onProgress?.(loadingMsg);
       if (showToasts) toast.info(loadingMsg);
 
-      // Convert file to ArrayBuffer
       const arrayBuffer = await file.arrayBuffer();
 
-      // Load the PDF document
       const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
       const pdf = await loadingTask.promise;
 
@@ -93,7 +88,6 @@ export function usePDFProcessing() {
         pageCount: pdf.numPages,
       };
 
-      // Extract metadata
       try {
         const pdfMetadata = await pdf.getMetadata();
         if (pdfMetadata.info) {
@@ -118,7 +112,6 @@ export function usePDFProcessing() {
           const page = await pdf.getPage(pageNum);
           const textContent = await page.getTextContent();
 
-          // Combine text items
           const pageText = textContent.items
             .map((item: any) => {
               if ("str" in item) {
