@@ -4,7 +4,7 @@ import { RecordingModal } from "@/components/recording-modal"
 import { UploadModal } from "@/components/upload-modal"
 import { PopoverTrigger } from "@/components/ui/popover"
 import { useNotes } from "@/app/hooks/useNotes"
-import { BookPlus, Mic2, Upload, ImagePlus, Send, FileText } from "lucide-react"
+import { BookPlus, Mic2, Upload, ImagePlus, Send, FileText, Mic, SendIcon } from "lucide-react"
 import { useState } from "react"
 import Footer from "@/components/footer"
 import { useRouter } from "next/navigation"
@@ -93,6 +93,7 @@ export default function Home() {
           {/* AI Prompt Input */}
           <div className="w-full">
             <PromptInput
+              className=""
               onSubmit={handleAIPromptSubmit}
               onError={(error) => {
                 if ('message' in error) {
@@ -104,7 +105,7 @@ export default function Home() {
                 <PromptInputTextarea
                   placeholder="Ask AI to write a note... (e.g., 'Write a summary about quantum computing' or 'Create a study guide for machine learning')"
                   disabled={isProcessing}
-                  className="min-h-[60px]"
+                  className="min-h-[92px]"
                 />
                 <PromptInputToolbar>
                   <div />
@@ -112,7 +113,7 @@ export default function Home() {
                     disabled={isProcessing}
                     status={isProcessing ? "submitted" : "ready"}
                   >
-                    {isProcessing ? <Loader /> : <Send />}
+                    {isProcessing ? <Loader /> : <SendIcon />}
                   </PromptInputSubmit>
                 </PromptInputToolbar>
               </PromptInputBody>
@@ -120,18 +121,20 @@ export default function Home() {
           </div>
 
           {/* Action Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-1 lg:gap-4">
+          <div className="flex flex-wrap gap-2 justify-center">
             {/* PDF Upload Card */}
             <PDFUploadModal open={isPDFUploadPopoverOpen} onOpenChange={setPDFUploadPopoverOpen}>
               <PopoverTrigger asChild>
-                <button className="cursor-pointer group relative flex flex-col items-start p-6 rounded-xl border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:scale-[1.02] text-left">
-                  <div className="mb-3 p-3 rounded-lg bg-purple-500/10 text-purple-600 group-hover:bg-purple-500/20 transition-colors">
-                    <FileText className="size-6" />
-                  </div>
-                  <h3 className="font-semibold text-base mb-1">Upload PDF</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Extract & analyze documents
-                  </p>
+                <button className={`
+                  inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                  border border-accent bg-background
+                  transition-all duration-200
+                  hover:bg-accent
+                  text-sm font-medium
+                  text-muted-foreground
+                `}>
+                  <FileText className="size-5" />
+                  <span className="">Upload PDF</span>
                 </button>
               </PopoverTrigger>
             </PDFUploadModal>
@@ -139,14 +142,16 @@ export default function Home() {
             {/* Image Upload Card */}
             <ImageUpload open={isImageUploadPopoverOpen} onOpenChange={setImageUploadPopoverOpen}>
               <PopoverTrigger asChild>
-                <button className="cursor-pointer group relative flex flex-col items-start p-6 rounded-xl border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:scale-[1.02] text-left">
-                  <div className="mb-3 p-3 rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
-                    <ImagePlus className="size-6" />
-                  </div>
-                  <h3 className="font-semibold text-base mb-1">Upload Images</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Analyze photos with AI
-                  </p>
+                <button className={`
+                  inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                  border border-accent bg-background
+                  transition-all duration-200
+                  hover:bg-accent
+                  text-sm font-medium
+                  text-muted-foreground
+                `}>
+                  <ImagePlus className="size-5" />
+                  <span className="">Upload Images</span>
                 </button>
               </PopoverTrigger>
             </ImageUpload>
@@ -154,14 +159,16 @@ export default function Home() {
             {/* Recording Card */}
             <RecordingModal open={isRecordingPopoverOpen} onOpenChange={setRecordingPopoverOpen}>
               <PopoverTrigger asChild>
-                <button className="cursor-pointer group relative flex flex-col items-start p-6 rounded-xl border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:scale-[1.02] text-left">
-                  <div className="mb-3 p-3 rounded-lg bg-red-500/10 text-red-400 group-hover:bg-red-500/20 transition-colors">
-                    <Mic2 className="size-6" />
-                  </div>
-                  <h3 className="font-semibold text-base mb-1">Record Audio</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Capture voice notes
-                  </p>
+                <button className={`
+                  inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                  border border-accent bg-background
+                  transition-all duration-200
+                  hover:bg-accent
+                  text-sm font-medium
+                  text-muted-foreground
+                `}>
+                  <Mic className="size-5" />
+                  <span className="">Transcribe audio</span>
                 </button>
               </PopoverTrigger>
             </RecordingModal>
@@ -169,14 +176,16 @@ export default function Home() {
             {/* Upload Audio Card */}
             <UploadModal open={isUploadPopoverOpen} onOpenChange={setUploadPopoverOpen}>
               <PopoverTrigger asChild>
-                <button className="cursor-pointer group relative flex flex-col items-start p-6 rounded-xl border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:scale-[1.02] text-left">
-                  <div className="mb-3 p-3 rounded-lg bg-blue-500/10 text-blue-600 group-hover:bg-blue-500/20 transition-colors">
-                    <Upload className="size-6" />
-                  </div>
-                  <h3 className="font-semibold text-base mb-1">Upload Audio</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Import audio files
-                  </p>
+                <button className={`
+                  inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                  border border-accent bg-background
+                  transition-all duration-200
+                  hover:bg-accent
+                  text-sm font-medium
+                  text-muted-foreground
+                `}>
+                  <FileText className="size-5" />
+                  <span className="">Upload Audio</span>
                 </button>
               </PopoverTrigger>
             </UploadModal>
@@ -184,15 +193,16 @@ export default function Home() {
             {/* Write Note Card */}
             <button
               onClick={handleCreateNewNote}
-              className="cursor-pointer group relative flex flex-col items-start p-6 rounded-xl border bg-card hover:bg-accent/50 transition-all hover:shadow-md hover:scale-[1.02] text-left"
-            >
-              <div className="mb-3 p-3 rounded-lg bg-green-500/10 text-green-600 group-hover:bg-green-500/20 transition-colors">
-                <BookPlus className="size-6" />
-              </div>
-              <h3 className="font-semibold text-base mb-1">Write Note</h3>
-              <p className="text-xs text-muted-foreground">
-                Start from scratch
-              </p>
+              className={`
+                  inline-flex items-center gap-2 px-4 py-2 rounded-xl
+                  border border-accent bg-background
+                  transition-all duration-200
+                  hover:bg-accent
+                  text-sm font-medium
+                  text-muted-foreground
+                `}>
+              <BookPlus className="size-5" />
+              <span className="">Empty note</span>
             </button>
           </div>
         </div>
