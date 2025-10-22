@@ -127,9 +127,9 @@ export default function Home() {
               <PopoverTrigger asChild>
                 <button className={`
                   inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                  border border-accent bg-background
+                  border border-secondary bg-background
                   transition-all duration-200
-                  hover:bg-accent
+                  hover:bg-secondary
                   text-sm font-medium
                   text-muted-foreground
                 `}>
@@ -144,9 +144,9 @@ export default function Home() {
               <PopoverTrigger asChild>
                 <button className={`
                   inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                  border border-accent bg-background
+                  border border-secondary bg-background
                   transition-all duration-200
-                  hover:bg-accent
+                  hover:bg-secondary
                   text-sm font-medium
                   text-muted-foreground
                 `}>
@@ -161,9 +161,9 @@ export default function Home() {
               <PopoverTrigger asChild>
                 <button className={`
                   inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                  border border-accent bg-background
+                  border border-secondary bg-background
                   transition-all duration-200
-                  hover:bg-accent
+                  hover:bg-secondary
                   text-sm font-medium
                   text-muted-foreground
                 `}>
@@ -178,9 +178,9 @@ export default function Home() {
               <PopoverTrigger asChild>
                 <button className={`
                   inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                  border border-accent bg-background
+                  border border-secondary bg-background
                   transition-all duration-200
-                  hover:bg-accent
+                  hover:bg-secondary
                   text-sm font-medium
                   text-muted-foreground
                 `}>
@@ -195,9 +195,9 @@ export default function Home() {
               onClick={handleCreateNewNote}
               className={`
                   inline-flex items-center gap-2 px-4 py-2 rounded-xl
-                  border border-accent bg-background
+                  border border-secondary bg-background
                   transition-all duration-200
-                  hover:bg-accent
+                  hover:bg-secondary
                   text-sm font-medium
                   text-muted-foreground
                 `}>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Rubik, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import PGliteWrapper from "./pglite-wrapper";
 import TanstackProvider from "./tanstack-provider";
@@ -8,13 +8,14 @@ import { SidebarProvider } from "@/components/providers/sidebar";
 import { LeftSidebar } from "@/components/sidebar";
 import { Toaster } from "@/components/ui/sonner"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const rubikSans = Rubik({
+  variable: "--font-sans",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
   subsets: ["latin"],
 });
 
@@ -31,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-[calc(100dvh)] w-full`}
+        className={`${rubikSans.variable} ${jetbrainsMono.variable} antialiased h-[calc(100dvh)] w-full`}
       >
         <ThemeProvider
           attribute="class"
