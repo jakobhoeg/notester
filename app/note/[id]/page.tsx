@@ -550,7 +550,8 @@ export default function NotePage() {
 
   const handleSaveTransformation = async () => {
     setIsTransformationPendingConfirmation(false)
-    const newContent = createContentFromText(transformedText)
+
+    const newContent = markdownToJSONContent(transformedText)
     setEditableContent(newContent)
 
     if (contentDebounceTimeout.current) {
