@@ -172,8 +172,8 @@ export function LeftSidebar() {
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <ScrollArea className="h-auto max-h-70">
-                      <div className="space-y-1">
-                        <div className="sticky top-0 ml-4 border-border border-l border-dashed px-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:px-0">
+                      <div className="">
+                        <div className="sticky top-0 ml-4 border-border border-l px-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:px-0">
                           {isCreatingNote ? (
                             <form
                               onSubmit={handleCreateNote}
@@ -190,7 +190,7 @@ export function LeftSidebar() {
                                     setNewNoteTitle("");
                                   }
                                 }}
-                                className="h-8 text-sm dark:bg-muted"
+                                className="h-8 text-sm dark:bg-muted flex-1"
                                 autoFocus
                               />
                               <div className="flex gap-1">
@@ -237,7 +237,7 @@ export function LeftSidebar() {
                             Array.from({ length: 4 }).map((_, index) => (
                               <div
                                 key={`skeleton-${index}`}
-                                className="ml-4 border-border border-l border-dashed px-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:px-0"
+                                className="ml-4 border-border border-l px-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:px-0"
                               >
                                 <SidebarMenuItem>
                                   <div className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5">
@@ -252,7 +252,7 @@ export function LeftSidebar() {
                               return (
                                 <div
                                   key={note.id}
-                                  className="ml-4 border-border border-l border-dashed px-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:px-0"
+                                  className="ml-4 border-border border-l px-2 group-data-[collapsible=icon]:ml-0 group-data-[collapsible=icon]:px-0"
                                 >
                                   <SidebarMenuItem>
                                     <SidebarMenuButton
@@ -283,13 +283,6 @@ export function LeftSidebar() {
                                         side="right"
                                         align="start"
                                       >
-                                        {/* <DropdownMenuItem
-                                          className="flex cursor-pointer items-center gap-2"
-                                        >
-                                          <Download className="h-4 w-4" />
-                                          <span>Export Markdown</span>
-                                        </DropdownMenuItem>
-                                        <DropdownMenuSeparator /> */}
                                         <DropdownMenuItem
                                           onClick={() => {
                                             handleDeleteNote(note.id);
