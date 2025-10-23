@@ -764,7 +764,7 @@ export default function NotePage() {
                         "whitespace-pre-line rounded p-2",
                         isStreaming && "animate-pulse disabled:opacity-100",
                         isTransformationPendingConfirmation &&
-                        "border-2 border-primary-foreground bg-muted/10 animate-pulse",
+                        "bg-muted/10 animate-pulse",
                       )}
                     >
                       {isAnalyzingImages || isTranscribing || isGeneratingAI || isGeneratingPDF ? (
