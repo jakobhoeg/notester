@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core";
 import { generateText } from "ai";
+import { PDF_AUTO_PROMPT } from "@/app/constants/prompts";
 
 interface PDFNoteGenerationOptions {
   pdfText: string;
@@ -93,13 +94,7 @@ export function usePDFNoteGeneration() {
         prompt = `I have a PDF document with the following content:\n\n${truncatedText}\n\nPlease ${customPrompt}`;
       } else {
         // Default comprehensive note generation
-        prompt = `I have a PDF document with the following content:\n\n${truncatedText}\n\nPlease analyze this document and create a comprehensive, well-structured note. Include:
-- A brief summary of the main topic
-- Key points and important information organized with headings
-- Any notable details, facts, or takeaways
-- Use markdown formatting to make the notes clear and scannable
-
-Focus on capturing the essential information in a way that would be useful for reviewing and studying later.`;
+        prompt = `I have a PDF document with the following content:\n\n${truncatedText}\n\n${PDF_AUTO_PROMPT}`;
       }
 
       // Add metadata context if available

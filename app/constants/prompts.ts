@@ -38,3 +38,15 @@ export const AUTOCOMPLETE_SYSTEM_PROMPT = "You are an AI writing assistant that 
   "Start your response immediately with the actual continuation text. " +
   "If the text seems complete or you cannot provide a meaningful suggestion, respond with an empty string. " +
   "Focus on maintaining the writing style, tone, and flow of the existing content.";
+
+// Auto prompts for file uploads (shown to users)
+export const PDF_AUTO_PROMPT = "Analyze this document and create a comprehensive, well-structured note. Include:\n" +
+  "- A brief summary of the main topic\n" +
+  "- Key points and important information organized with headings\n" +
+  "- Any notable details, facts, or takeaways\n" +
+  "- Use markdown formatting to make the notes clear and scannable\n\n" +
+  "Focus on capturing the essential information in a way that would be useful for reviewing and studying later.";
+
+export const IMAGE_AUTO_PROMPT = "Analyze the image(s) and write a short note about it. Only include relevant information. If the image is text-based, only return the text and nothing else.";
+
+export const AUDIO_AUTO_PROMPT = "Transcribe the following audio. Include EVERYTHING.";
