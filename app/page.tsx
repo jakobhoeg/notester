@@ -1,7 +1,7 @@
 "use client"
 
 import { useNotes } from "@/app/hooks/useNotes"
-import { BookPlus, FileText, ImagePlus, SendIcon, HeadphonesIcon } from "lucide-react"
+import { BookPlus, FileText, ImagePlus, SendIcon, HeadphonesIcon, InfoIcon } from "lucide-react"
 import { useState } from "react"
 import Footer from "@/components/footer"
 import { useRouter } from "next/navigation"
@@ -29,6 +29,13 @@ import { usePDFProcessing } from "@/app/hooks/usePDFProcessing"
 import { Button } from "@/components/ui/button"
 import { XIcon, PaperclipIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { PDF_AUTO_PROMPT, IMAGE_AUTO_PROMPT, AUDIO_AUTO_PROMPT } from "@/app/constants/prompts"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 type FileType = 'pdf' | 'image' | 'audio' | 'recording' | null
 
@@ -84,6 +91,7 @@ export default function Home() {
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [audioFile, setAudioFile] = useState<File | null>(null)
   const [activeCategory, setActiveCategory] = useState("")
+  const [userInput, setUserInput] = useState("")
   const router = useRouter()
   const { extractTextFromPDF } = usePDFProcessing()
 
@@ -178,8 +186,11 @@ export default function Home() {
     toast.success("Audio file added! Add a prompt or submit to transcribe.")
   }
 
-  const handleSubmit = async (message: PromptInputMessage) => {
+  const handleSubmit = async (message: PromptInputMessage, event: React.FormEvent<HTMLFormElement>) => {
     const userPrompt = message.text?.trim()
+
+    // Clear user input state since we're submitting
+    setUserInput('')
 
     if (fileType === 'pdf' && pdfData) {
       await handlePDFSubmit(userPrompt)
@@ -393,7 +404,8 @@ export default function Home() {
 
       await addGenerationData(newNote.id, 'audio', {
         audioBase64,
-        fileName: audioFile.name
+        fileName: audioFile.name,
+        customPrompt: userPrompt || null
       })
 
       router.push(`/note/${newNote.id}`)
@@ -413,6 +425,7 @@ export default function Home() {
     setImageFiles([])
     setAudioFile(null)
     setProcessingStatus("")
+    setUserInput("")
   }
 
   const handleRemoveAttachment = (id: string, attachments: any) => {
@@ -420,14 +433,16 @@ export default function Home() {
 
     attachments.remove(id)
 
-    if (fileType === 'image' && attachmentToRemove) {
+    // Check if this was the last attachment
+    const remainingFiles = attachments.files.filter((file: any) => file.id !== id)
+
+    if (remainingFiles.length === 0) {
+      // No more files, reset everything
+      resetState()
+    } else if (fileType === 'image' && attachmentToRemove) {
+      // Update image files state
       setImageFiles(prev => {
         const updated = prev.filter(file => file.name !== attachmentToRemove.filename)
-
-        if (updated.length === 0) {
-          resetState()
-        }
-
         return updated
       })
     }
@@ -448,10 +463,49 @@ export default function Home() {
     setActiveCategory("")
   }
 
+  const getAutoPromptMessage = () => {
+    if (fileType === 'pdf') return PDF_AUTO_PROMPT
+    if (fileType === 'image') return IMAGE_AUTO_PROMPT
+    if (fileType === 'audio') return AUDIO_AUTO_PROMPT
+    return null
+  }
+
   return (
     <div className="flex flex-col h-full w-full min-h-0">
       <main className="px-4 overflow-y-auto w-full max-w-4xl mx-auto min-h-0 overflow-hidden flex flex-col items-center justify-center h-full">
-        <div className="w-full max-w-4xl space-y-6">
+        <div className="w-full max-w-4xl space-y-2">
+          {/* Show auto prompt info when file is attached and user hasn't typed anything */}
+          {fileType && getAutoPromptMessage() && !userInput.trim() && (
+            <TooltipProvider>
+              <Tooltip delayDuration={400}>
+                <TooltipTrigger asChild>
+                  <div className="rounded-lg border bg-muted/50 p-2 text-sm cursor-help transition-colors hover:bg-muted/70">
+                    <div className="flex items-start gap-2">
+                      <InfoIcon className="mt-0.5 size-4 flex-shrink-0 text-muted-foreground" />
+                      <div className="flex-1 space-y-1">
+                        <p className="font-medium text-foreground">System prompt:</p>
+                        <p className="text-muted-foreground line-clamp-2">
+                          {getAutoPromptMessage()?.replace(/\n/g, ' ')}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent
+                  side="top"
+                  className="max-w-xs p-4 max-h-60 overflow-y-scroll"
+                  sideOffset={5}
+                >
+                  <div className="space-y-2">
+                    <p className="font-semibold text-sm">Full Auto-prompt:</p>
+                    <p className="text-sm whitespace-pre-line leading-relaxed">
+                      {getAutoPromptMessage()}
+                    </p>
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           {/* Unified Prompt Input with File Upload Options */}
           <div className="w-full">
             <PromptInput
@@ -475,15 +529,16 @@ export default function Home() {
                 <PromptInputTextarea
                   placeholder={
                     fileType === 'pdf'
-                      ? "Describe how you'd like the AI to process this PDF (or leave blank for comprehensive notes)..."
+                      ? "Add custom instructions (optional)..."
                       : fileType === 'image'
-                        ? "Describe what you'd like me to focus on in these images (or leave blank for general analysis)..."
+                        ? "Add custom instructions or context (optional)..."
                         : fileType === 'audio'
                           ? "Add any context for the audio transcription (optional)..."
                           : "Ask AI to write a note, or use the + menu to upload files..."
                   }
                   disabled={isProcessing}
                   className="min-h-[92px]"
+                  onChange={(e) => setUserInput(e.target.value)}
                 />
                 <PromptInputToolbar>
                   <PromptInputTools>
