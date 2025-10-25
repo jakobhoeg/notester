@@ -31,9 +31,7 @@ import { MarkdownTablePaste } from "./markdown-table-paste";
 import { cx } from "class-variance-authority";
 import { common, createLowlight } from "lowlight";
 
-//TODO I am using cx here to get tailwind autocomplete working, idk if someone else can write a regex to just capture the class key in objects
 const aiHighlight = AIHighlight;
-//You can overwrite the placeholder with your own configuration
 const placeholder = Placeholder.configure({
   placeholder: ({ node }) => {
     if (node.type.name === "heading") {
@@ -92,13 +90,14 @@ const starterKit = StarterKit.configure({
   },
   codeBlock: {
     HTMLAttributes: {
-      class: cx("rounded-md bg-muted text-muted-foreground border p-5 font-mono font-medium"),
+      class: cx("rounded-md bg-muted/50 text-muted-foreground border p-2 font-mono"),
+      spellcheck: false
     },
   },
   code: {
     HTMLAttributes: {
       class: cx("rounded-md bg-muted  px-1.5 py-1 font-mono font-medium"),
-      spellcheck: "false",
+      spellcheck: false
     },
   },
   heading: false, // We'll configure this separately
@@ -242,7 +241,6 @@ export const defaultExtensions = [
   horizontalRule,
   aiHighlight,
   aiAutocomplete,
-  codeBlockLowlight,
   youtube,
   twitter,
   mathematics,
