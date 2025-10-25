@@ -36,6 +36,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import Chrome3DText from "@/components/dithering-shader/3d-text"
 
 type FileType = 'pdf' | 'image' | 'audio' | 'recording' | null
 
@@ -472,141 +473,148 @@ export default function Home() {
 
   return (
     <div className="flex flex-col h-full w-full min-h-0">
-      <main className="px-4 overflow-y-auto w-full max-w-4xl mx-auto min-h-0 overflow-hidden flex flex-col items-center justify-center h-full">
-        <div className="w-full max-w-4xl space-y-2">
-          {/* Show auto prompt info when file is attached and user hasn't typed anything */}
-          {fileType && getAutoPromptMessage() && !userInput.trim() && (
-            <TooltipProvider>
-              <Tooltip delayDuration={400}>
-                <TooltipTrigger asChild>
-                  <div className="rounded-lg border bg-muted/50 p-2 text-sm cursor-help transition-colors hover:bg-muted/70">
-                    <div className="flex items-start gap-2">
-                      <InfoIcon className="mt-0.5 size-4 flex-shrink-0 text-muted-foreground" />
-                      <div className="flex-1 space-y-1">
-                        <p className="font-medium text-foreground">System prompt:</p>
-                        <p className="text-muted-foreground line-clamp-2">
-                          {getAutoPromptMessage()?.replace(/\n/g, ' ')}
-                        </p>
+      <div className="flex flex-col h-full w-full items-center justify-center">
+        <div className="w-full h-32 md:h-52 mb-2 md:mb-8 flex items-center justify-center overflow-hidden">
+          <Chrome3DText
+            text="Built-in AI"
+          />
+        </div>
+        <main className="px-4 overflow-y-auto w-full max-w-4xl mx-auto min-h-0 overflow-hidden flex flex-col items-center justify-center ">
+          <div className="w-full max-w-4xl space-y-2">
+            {/* Show auto prompt info when file is attached and user hasn't typed anything */}
+            {fileType && getAutoPromptMessage() && !userInput.trim() && (
+              <TooltipProvider>
+                <Tooltip delayDuration={400}>
+                  <TooltipTrigger asChild>
+                    <div className="rounded-lg border bg-muted/50 p-2 text-sm cursor-help transition-colors hover:bg-muted/70">
+                      <div className="flex items-start gap-2">
+                        <InfoIcon className="mt-0.5 size-4 flex-shrink-0 text-muted-foreground" />
+                        <div className="flex-1 space-y-1">
+                          <p className="font-medium text-foreground">System prompt:</p>
+                          <p className="text-muted-foreground line-clamp-2">
+                            {getAutoPromptMessage()?.replace(/\n/g, ' ')}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  side="top"
-                  className="max-w-xs p-4 max-h-60 overflow-y-scroll"
-                  sideOffset={5}
-                >
-                  <div className="space-y-2">
-                    <p className="font-semibold text-sm">Full Auto-prompt:</p>
-                    <p className="text-sm whitespace-pre-line leading-relaxed">
-                      {getAutoPromptMessage()}
-                    </p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          {/* Unified Prompt Input with File Upload Options */}
-          <div className="w-full">
-            <PromptInput
-              className=""
-              onSubmit={handleSubmit}
-              onError={(error) => {
-                if ('message' in error) {
-                  toast.error(error.message)
-                }
-              }}
-            >
-              <PromptInputBody>
-                <PromptInputAttachments>
-                  {(attachment) => (
-                    <CustomAttachment
-                      data={attachment}
-                      onRemove={handleRemoveAttachment}
-                    />
-                  )}
-                </PromptInputAttachments>
-                <PromptInputTextarea
-                  placeholder={
-                    fileType === 'pdf'
-                      ? "Add custom instructions (optional)..."
-                      : fileType === 'image'
-                        ? "Add custom instructions or context (optional)..."
-                        : fileType === 'audio'
-                          ? "Add any context for the audio transcription (optional)..."
-                          : "Ask AI to write a note, or use the + menu to upload files..."
-                  }
-                  disabled={isProcessing}
-                  className="min-h-[92px]"
-                  onChange={(e) => setUserInput(e.target.value)}
-                />
-                <PromptInputToolbar>
-                  <PromptInputTools>
-                    <PromptInputActionMenu>
-                      <PromptInputActionMenuTrigger />
-                      <PromptInputActionMenuContent>
-                        <PromptInputActionCustom
-                          label="Upload PDF"
-                          icon={<FileText className="size-4" />}
-                          accept="application/pdf"
-                          multiple={false}
-                          onFilesSelected={handlePDFSelected}
-                        />
-                        <PromptInputActionCustom
-                          label="Upload Images"
-                          icon={<ImagePlus className="size-4" />}
-                          accept="image/*"
-                          multiple={true}
-                          onFilesSelected={handleImagesSelected}
-                        />
-                        <PromptInputActionCustom
-                          label="Upload Audio"
-                          icon={<HeadphonesIcon className="size-4" />}
-                          accept="audio/mpeg,audio/wav,audio/mp4,audio/m4a"
-                          multiple={false}
-                          onFilesSelected={handleAudioSelected}
-                        />
-                        <PromptInputActionMenuItem
-                          onSelect={(e) => {
-                            e.preventDefault()
-                            handleCreateNewNote()
-                          }}
-                        >
-                          <BookPlus className="mr-2 size-4" />
-                          Empty Note
-                        </PromptInputActionMenuItem>
-                      </PromptInputActionMenuContent>
-                    </PromptInputActionMenu>
-                  </PromptInputTools>
-                  <PromptInputSubmit
-                    disabled={isProcessing}
-                    status={isProcessing ? "submitted" : "ready"}
+                  </TooltipTrigger>
+                  <TooltipContent
+                    side="top"
+                    className="max-w-xs p-4 max-h-60 overflow-y-scroll"
+                    sideOffset={5}
                   >
-                    {isProcessing ? <Loader /> : <SendIcon />}
-                  </PromptInputSubmit>
-                </PromptInputToolbar>
-              </PromptInputBody>
-            </PromptInput>
-
-            {/* Processing Status */}
-            {isProcessing && processingStatus && (
-              <div className="text-muted-foreground flex items-center gap-2 text-sm mt-2">
-                <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                <span>{processingStatus}</span>
-              </div>
+                    <div className="space-y-2">
+                      <p className="font-semibold text-sm">Full Auto-prompt:</p>
+                      <p className="text-sm whitespace-pre-line leading-relaxed">
+                        {getAutoPromptMessage()}
+                      </p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
+            {/* Unified Prompt Input with File Upload Options */}
+            <div className="w-full">
+              <PromptInput
+                className=""
+                onSubmit={handleSubmit}
+                onError={(error) => {
+                  if ('message' in error) {
+                    toast.error(error.message)
+                  }
+                }}
+              >
+                <PromptInputBody>
+                  <PromptInputAttachments>
+                    {(attachment) => (
+                      <CustomAttachment
+                        data={attachment}
+                        onRemove={handleRemoveAttachment}
+                      />
+                    )}
+                  </PromptInputAttachments>
+                  <PromptInputTextarea
+                    placeholder={
+                      fileType === 'pdf'
+                        ? "Add custom instructions (optional)..."
+                        : fileType === 'image'
+                          ? "Add custom instructions or context (optional)..."
+                          : fileType === 'audio'
+                            ? "Add any context for the audio transcription (optional)..."
+                            : "Ask AI to write a note, or use the + menu to upload files..."
+                    }
+                    disabled={isProcessing}
+                    className="min-h-[92px]"
+                    onChange={(e) => setUserInput(e.target.value)}
+                  />
+                  <PromptInputToolbar>
+                    <PromptInputTools>
+                      <PromptInputActionMenu>
+                        <PromptInputActionMenuTrigger />
+                        <PromptInputActionMenuContent>
+                          <PromptInputActionCustom
+                            label="Upload PDF"
+                            icon={<FileText className="size-4" />}
+                            accept="application/pdf"
+                            multiple={false}
+                            onFilesSelected={handlePDFSelected}
+                          />
+                          <PromptInputActionCustom
+                            label="Upload Images"
+                            icon={<ImagePlus className="size-4" />}
+                            accept="image/*"
+                            multiple={true}
+                            onFilesSelected={handleImagesSelected}
+                          />
+                          <PromptInputActionCustom
+                            label="Upload Audio"
+                            icon={<HeadphonesIcon className="size-4" />}
+                            accept="audio/mpeg,audio/wav,audio/mp4,audio/m4a"
+                            multiple={false}
+                            onFilesSelected={handleAudioSelected}
+                          />
+                          <PromptInputActionMenuItem
+                            onSelect={(e) => {
+                              e.preventDefault()
+                              handleCreateNewNote()
+                            }}
+                          >
+                            <BookPlus className="mr-2 size-4" />
+                            Empty Note
+                          </PromptInputActionMenuItem>
+                        </PromptInputActionMenuContent>
+                      </PromptInputActionMenu>
+                    </PromptInputTools>
+                    <PromptInputSubmit
+                      disabled={isProcessing}
+                      status={isProcessing ? "submitted" : "ready"}
+                    >
+                      {isProcessing ? <Loader /> : <SendIcon />}
+                    </PromptInputSubmit>
+                  </PromptInputToolbar>
+                </PromptInputBody>
+              </PromptInput>
 
-            {/* Prompt Suggestions */}
-            {!isProcessing && (
-              <PromptSuggestions
-                activeCategory={activeCategory}
-                onCategorySelect={handleCategorySelect}
-                onSuggestionSelect={handleSuggestionSelect}
-              />
-            )}
+              {/* Processing Status */}
+              {isProcessing && processingStatus && (
+                <div className="text-muted-foreground flex items-center gap-2 text-sm mt-2">
+                  <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  <span>{processingStatus}</span>
+                </div>
+              )}
+
+              {/* Prompt Suggestions */}
+              {!isProcessing && (
+                <PromptSuggestions
+                  activeCategory={activeCategory}
+                  onCategorySelect={handleCategorySelect}
+                  onSuggestionSelect={handleSuggestionSelect}
+                />
+              )}
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
 
       <div className="flex-shrink-0 pb-2 w-full flex flex-col gap-2 absolute bottom-0">
         <Footer />
