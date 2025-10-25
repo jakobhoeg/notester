@@ -25,6 +25,17 @@ export function PromptSuggestions({
 
   const suggestionGroups: SuggestionGroup[] = [
     {
+      label: "Study guides",
+      icon: <Library className="h-4 w-4" />,
+      highlight: "Study",
+      items: [
+        "Create a study guide note on Machine Learning",
+        "Create a study guide note on data structures",
+        "Create a study guide note on algorithms",
+        "Create a study guide note on system design",
+      ],
+    },
+    {
       label: "Summary",
       icon: <FileEdit className="h-4 w-4" />,
       highlight: "Summarize",
@@ -43,17 +54,6 @@ export function PromptSuggestions({
         "Create a note about Python fundamentals",
         "Create a note summarizing JavaScript best practices",
         "Create a study note on TypeScript",
-      ],
-    },
-    {
-      label: "Study guides",
-      icon: <Library className="h-4 w-4" />,
-      highlight: "Study",
-      items: [
-        "Create a study guide note on ML",
-        "Create a study guide note on data structures",
-        "Create a study guide note on algorithms",
-        "Create a study guide note on system design",
       ],
     },
     {
