@@ -189,6 +189,65 @@ export const PromptInputActionAddAttachments = ({
   );
 };
 
+export type PromptInputActionCustomProps = ComponentProps<
+  typeof DropdownMenuItem
+> & {
+  label: string;
+  icon?: React.ReactNode;
+  accept?: string;
+  multiple?: boolean;
+  onFilesSelected?: (files: File[], attachments?: AttachmentsContext) => void;
+};
+
+export const PromptInputActionCustom = ({
+  label,
+  icon,
+  accept,
+  multiple = false,
+  onFilesSelected,
+  ...props
+}: PromptInputActionCustomProps) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachments = usePromptInputAttachments();
+
+  const handleClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleChange: ChangeEventHandler<HTMLInputElement> = (event) => {
+    if (event.currentTarget.files && onFilesSelected) {
+      onFilesSelected(Array.from(event.currentTarget.files), attachments);
+    }
+    // Reset input to allow selecting the same file again
+    if (event.currentTarget) {
+      event.currentTarget.value = '';
+    }
+  };
+
+  return (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={accept}
+        multiple={multiple}
+        className="hidden"
+        onChange={handleChange}
+      />
+      <DropdownMenuItem
+        {...props}
+        onSelect={(e) => {
+          e.preventDefault();
+          handleClick();
+        }}
+      >
+        {icon && <span className="mr-2">{icon}</span>}
+        {label}
+      </DropdownMenuItem>
+    </>
+  );
+};
+
 export type PromptInputMessage = {
   text?: string;
   files?: FileUIPart[];
@@ -487,13 +546,13 @@ export const PromptInputTextarea = ({
 
   const handlePaste: ClipboardEventHandler<HTMLTextAreaElement> = (event) => {
     const items = event.clipboardData?.items;
-    
+
     if (!items) {
       return;
     }
 
     const files: File[] = [];
-    
+
     for (const item of items) {
       if (item.kind === "file") {
         const file = item.getAsFile();
@@ -542,6 +601,18 @@ export const PromptInputToolbar = ({
   />
 );
 
+export type PromptInputFooterProps = HTMLAttributes<HTMLDivElement>;
+
+export const PromptInputFooter = ({
+  className,
+  ...props
+}: PromptInputFooterProps) => (
+  <div
+    className={cn("flex items-center justify-between gap-2 p-2", className)}
+    {...props}
+  />
+);
+
 export type PromptInputToolsProps = HTMLAttributes<HTMLDivElement>;
 
 export const PromptInputTools = ({
@@ -551,7 +622,6 @@ export const PromptInputTools = ({
   <div
     className={cn(
       "flex items-center gap-1",
-      "[&_button:first-child]:rounded-bl-xl",
       className
     )}
     {...props}
