@@ -93,7 +93,7 @@ export default function Chrome3DText({ }: Chrome3DTextProps) {
       <Canvas
         shadows
         camera={{ position: [0, 0, 17], fov: 65 }}
-        gl={{ alpha: true }}
+        gl={{ alpha: true, preserveDrawingBuffer: true }}
       >
         <Suspense fallback={null}>
           <group position={[0, -0.5, 0]}>
