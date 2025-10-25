@@ -250,7 +250,7 @@ export function LeftSidebar() {
                               variant="outline"
                               size="sm"
                               tooltip="New note"
-                              className="flex h-8 w-full items-center justify-start gap-2 border border-border bg-background pl-2 text-sm group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:pr-0 group-data-[collapsible=icon]:pl-0 dark:bg-muted"
+                              className="group-data-[collapsible=icon]:hidden flex h-8 w-full items-center justify-start gap-2 border border-border bg-background pl-2 text-sm group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:pr-0 group-data-[collapsible=icon]:pl-0 dark:bg-muted"
                               onClick={() => setIsCreatingNote(true)}
                               data-new-doc-trigger
                             >

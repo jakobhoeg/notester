@@ -28,7 +28,7 @@ function PromptSuggestion({
       <Button
         variant={variant || "outline"}
         size={size || "sm"}
-        className={cn("rounded-full", className)}
+        className={cn("rounded-lg text-muted-foreground", className)}
         {...props}
       >
         {children}
@@ -43,7 +43,7 @@ function PromptSuggestion({
         size={size || "sm"}
         className={cn(
           "w-full cursor-pointer justify-start rounded-xl py-2",
-          "hover:bg-accent",
+          "",
           className
         )}
         {...props}
