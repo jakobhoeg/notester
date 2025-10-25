@@ -1,10 +1,11 @@
 "use client"
 
 import { useNotes } from "@/app/hooks/useNotes"
-import { BookPlus, FileText, Mic, ImagePlus, SendIcon, HeadphonesIcon } from "lucide-react"
+import { BookPlus, FileText, ImagePlus, SendIcon, HeadphonesIcon } from "lucide-react"
 import { useState } from "react"
 import Footer from "@/components/footer"
 import { useRouter } from "next/navigation"
+import { PromptSuggestions, type SuggestionGroup } from "@/components/prompt-with-suggestions"
 import {
   PromptInput,
   PromptInputBody,
@@ -82,6 +83,7 @@ export default function Home() {
   const [pdfData, setPdfData] = useState<{ text: string; metadata: any } | null>(null)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [audioFile, setAudioFile] = useState<File | null>(null)
+  const [activeCategory, setActiveCategory] = useState("")
   const router = useRouter()
   const { extractTextFromPDF } = usePDFProcessing()
 
@@ -431,6 +433,21 @@ export default function Home() {
     }
   }
 
+  const handleCategorySelect = (category: string) => {
+    setActiveCategory(category)
+  }
+
+  const handleSuggestionSelect = (suggestion: string) => {
+    const textarea = document.querySelector('textarea[name="message"]') as HTMLTextAreaElement
+    if (textarea) {
+      textarea.value = suggestion
+      const event = new Event('input', { bubbles: true })
+      textarea.dispatchEvent(event)
+      textarea.focus()
+    }
+    setActiveCategory("")
+  }
+
   return (
     <div className="flex flex-col h-full w-full min-h-0">
       <main className="px-4 overflow-y-auto w-full max-w-4xl mx-auto min-h-0 overflow-hidden flex flex-col items-center justify-center h-full">
@@ -522,6 +539,15 @@ export default function Home() {
                 <div className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                 <span>{processingStatus}</span>
               </div>
+            )}
+
+            {/* Prompt Suggestions */}
+            {!isProcessing && (
+              <PromptSuggestions
+                activeCategory={activeCategory}
+                onCategorySelect={handleCategorySelect}
+                onSuggestionSelect={handleSuggestionSelect}
+              />
             )}
           </div>
         </div>
