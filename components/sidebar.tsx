@@ -43,7 +43,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import * as React from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TooltipProvider } from "./ui/tooltip";
@@ -64,6 +64,11 @@ export function LeftSidebar() {
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const router = useRouter();
   const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleDeleteNote = async (noteId: string) => {
     // Check if we're currently viewing the note being deleted
@@ -341,16 +346,20 @@ export function LeftSidebar() {
               className="scale-90"
             />
           </div>
-          {/* button when collapsed */}
-          <div className="hidden group-data-[collapsible=icon]:flex items-center justify-center">
-            <SidebarMenuButton
-              onClick={cycleTheme}
-              tooltip={`Theme: ${theme}`}
-              className="h-8 w-8"
-            >
-              {getThemeIcon()}
-            </SidebarMenuButton>
-          </div>
+          {mounted && (
+            <>
+              {/* button when collapsed */}
+              <div className="hidden group-data-[collapsible=icon]:flex items-center justify-center">
+                <SidebarMenuButton
+                  onClick={cycleTheme}
+                  tooltip={`Theme: ${theme}`}
+                  className="h-8 w-8"
+                >
+                  {getThemeIcon()}
+                </SidebarMenuButton>
+              </div>
+            </>
+          )}
         </SidebarFooter>
         <SidebarRail />
       </Sidebar>

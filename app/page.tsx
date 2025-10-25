@@ -82,7 +82,6 @@ export default function Home() {
   const [pdfData, setPdfData] = useState<{ text: string; metadata: any } | null>(null)
   const [imageFiles, setImageFiles] = useState<File[]>([])
   const [audioFile, setAudioFile] = useState<File | null>(null)
-  const [isRecordingModalOpen, setRecordingModalOpen] = useState(false)
   const router = useRouter()
   const { extractTextFromPDF } = usePDFProcessing()
 
@@ -106,7 +105,6 @@ export default function Home() {
     const file = files[0]
     if (!file) return
 
-    // Clear previous attachments and state
     if (attachments?.clear) {
       attachments.clear()
     }
@@ -116,7 +114,6 @@ export default function Home() {
     setIsProcessing(true)
     setPdfData(null)
 
-    // Add to attachment display if available
     if (attachments?.add) {
       attachments.add([file])
     }
@@ -147,13 +144,11 @@ export default function Home() {
       return
     }
 
-    // Clear previous attachments and state
     if (attachments?.clear) {
       attachments.clear()
     }
     resetState()
 
-    // Add to attachment display if available
     if (attachments?.add) {
       attachments.add(imageFilesList)
     }
@@ -167,13 +162,11 @@ export default function Home() {
     const file = files[0]
     if (!file) return
 
-    // Clear previous attachments and state
     if (attachments?.clear) {
       attachments.clear()
     }
     resetState()
 
-    // Add to attachment display if available
     if (attachments?.add) {
       attachments.add([file])
     }
@@ -186,7 +179,6 @@ export default function Home() {
   const handleSubmit = async (message: PromptInputMessage) => {
     const userPrompt = message.text?.trim()
 
-    // Handle different file types
     if (fileType === 'pdf' && pdfData) {
       await handlePDFSubmit(userPrompt)
     } else if (fileType === 'image' && imageFiles.length > 0) {
