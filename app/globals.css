@@ -49,9 +49,9 @@
   --shadow-offset-x: 0px;
   --shadow-offset-y: 2px;
   --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --loading-start: #f5f5f5;
-  --loading-mid: #8cc1c5;
-  --loading-end: #f5f5f5;
+  --loading-start: #f8f8f8;
+  --loading-mid: #7ec8ce;
+  --loading-end: #f8f8f8;
 }
 
 .dark {
@@ -100,9 +100,9 @@
   --shadow-offset-x: 0px;
   --shadow-offset-y: 2px;
   --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.10), 0 1px 2px -1px hsl(0 0% 0% / 0.10);
-  --loading-start: #03272260;
-  --loading-mid: #2e909760;
-  --loading-end: #03272260;
+  --loading-start: #1c1d1d;
+  --loading-mid: #2e90978c;
+  --loading-end: #1c1d1d;
 }
 
 @theme inline {
