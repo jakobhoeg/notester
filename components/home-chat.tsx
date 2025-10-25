@@ -36,7 +36,21 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import Chrome3DText from "@/components/dithering-shader/3d-text"
+import dynamic from 'next/dynamic'
+
+// Lazy load the 3D text component to avoid blocking initial render
+// with heavy Three.js dependencies
+const Chrome3DText = dynamic(
+  () => import("@/components/dithering-shader/3d-text"),
+  {
+    ssr: false, // Disable SSR for Three.js components
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center">
+        {/* Optional: Add a loading skeleton here */}
+      </div>
+    )
+  }
+)
 
 type FileType = 'pdf' | 'image' | 'audio' | 'recording' | null
 

@@ -1,8 +1,8 @@
 "use client"
 
 import { Canvas } from '@react-three/fiber';
-import { Center, Float, Text3D } from '@react-three/drei';
-import { useState, FC, memo, JSX } from 'react';
+import { Center, Float, Text3D, useGLTF } from '@react-three/drei';
+import { Suspense, useEffect, useState, useCallback, FC, memo, JSX } from 'react';
 import { PostProcessing } from './post-processing';
 import { EnvironmentWrapper } from './environment';
 import { useControls, folder, Leva } from 'leva';
@@ -16,10 +16,23 @@ interface Chrome3DTextProps {
   className?: string;
 }
 
-function ChromeText(): JSX.Element {
+// Font URL constant to ensure consistency
+const FONT_URL = "https://threejs.org/examples/fonts/helvetiker_bold.typeface.json";
+
+// Preload the font to avoid blocking the main thread later
+// This happens once when the module is loaded
+if (typeof window !== 'undefined') {
+  useGLTF.preload(FONT_URL);
+}
+
+/**
+ * 3D Chrome Text component
+ * Memoized to prevent unnecessary re-renders
+ */
+const ChromeText = memo(function ChromeText(): JSX.Element {
   return (
     <Text3D
-      font="https://threejs.org/examples/fonts/helvetiker_bold.typeface.json"
+      font={FONT_URL}
       size={0.56}
       height={0.2}
       curveSegments={12}
@@ -37,7 +50,8 @@ function ChromeText(): JSX.Element {
       />
     </Text3D>
   )
-}
+});
+
 export default function Chrome3DText({ }: Chrome3DTextProps) {
   const [modelScale, setModelScale] = useState(3);
 
@@ -57,33 +71,55 @@ export default function Chrome3DText({ }: Chrome3DTextProps) {
     })
   });
 
+  // Responsive adjustment handler for model scale
+  const handleResize = useCallback(() => {
+    const isSmallScreen = window.innerWidth <= 768;
+    setModelScale(isSmallScreen ? 2.4 : 3); // 20% reduction on small screens
+  }, []);
+
+  // Set up resize handling
+  useEffect(() => {
+    // Initial check
+    handleResize();
+
+    // Add listener
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [handleResize]);
+
   return (
-    <div style={{ width: '75%' }}>
+    <div style={{ width: '85%' }}>
       <Leva hidden={process.env.NODE_ENV === 'production'} />
       <Canvas
         shadows
         camera={{ position: [0, 0, 17], fov: 65 }}
         gl={{ alpha: true }}
       >
-        <group position={[0, -0.5, 0]}>
-          <Float
-            floatIntensity={2}
-            rotationIntensity={0.2}
-            speed={2}
-          >
-            <Center scale={modelScale} position={[0, 0, 0]} rotation={[0, 0, 0]}>
-              <ChromeText />
-            </Center>
-          </Float>
-        </group>
-        {/* <OrbitControls /> */}
-        <EnvironmentWrapper intensity={intensity} highlight={highlight} />
-        <Effects />
+        <Suspense fallback={null}>
+          <group position={[0, -0.5, 0]}>
+            <Float
+              floatIntensity={2}
+              rotationIntensity={0.2}
+              speed={2}
+            >
+              <Center scale={modelScale} position={[0, 0, 0]} rotation={[0, 0, 0]}>
+                <ChromeText />
+              </Center>
+            </Float>
+          </group>
+          {/* <OrbitControls /> */}
+          <EnvironmentWrapper intensity={intensity} highlight={highlight} />
+          <Effects />
+        </Suspense>
       </Canvas>
     </div>
   );
 }
 
+/**
+ * Post-processing effects wrapper component
+ * Memoized to prevent unnecessary re-renders
+ */
 const Effects: FC = memo(() => (
   <PostProcessing />
 ))
