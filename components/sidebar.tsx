@@ -23,6 +23,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
   SidebarTrigger,
+  SidebarFooter,
 } from "@/components/providers/sidebar";
 import { cn } from "@/lib/utils";
 import {
@@ -51,6 +52,10 @@ import { toast } from "sonner";
 import { Input } from "./ui/input";
 import Image from "next/image";
 import { Skeleton } from "./ui/skeleton";
+import { ThemeSwitcher } from "@/components/ui/shadcn-io/theme-switcher";
+import { useTheme } from "next-themes";
+import { Monitor, Moon, Sun } from "lucide-react";
+import { Button } from "./ui/button";
 
 export function LeftSidebar() {
   const pathname = usePathname();
@@ -58,6 +63,7 @@ export function LeftSidebar() {
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [newNoteTitle, setNewNoteTitle] = useState("");
   const router = useRouter();
+  const { theme, setTheme } = useTheme();
 
   const handleDeleteNote = async (noteId: string) => {
     // Check if we're currently viewing the note being deleted
@@ -92,6 +98,24 @@ export function LeftSidebar() {
     } catch (error) {
       toast.error("Failed to create document");
       console.error("Failed to create document:", error);
+    }
+  };
+
+  const cycleTheme = () => {
+    const themes: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
+    const currentIndex = themes.indexOf(theme as 'light' | 'dark' | 'system');
+    const nextIndex = (currentIndex + 1) % themes.length;
+    setTheme(themes[nextIndex]);
+  };
+
+  const getThemeIcon = () => {
+    switch (theme) {
+      case 'light':
+        return <Sun className="h-4 w-4" />;
+      case 'dark':
+        return <Moon className="h-4 w-4" />;
+      default:
+        return <Monitor className="h-4 w-4" />;
     }
   };
 
@@ -308,6 +332,26 @@ export function LeftSidebar() {
             </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>
+        <SidebarFooter >
+          {/* theme switcher when expanded */}
+          <div className="px-4 py-1 flex items-center group-data-[collapsible=icon]:hidden">
+            <ThemeSwitcher
+              value={theme as 'light' | 'dark' | 'system'}
+              onChange={(newTheme) => setTheme(newTheme)}
+              className="scale-90"
+            />
+          </div>
+          {/* button when collapsed */}
+          <div className="hidden group-data-[collapsible=icon]:flex items-center justify-center">
+            <SidebarMenuButton
+              onClick={cycleTheme}
+              tooltip={`Theme: ${theme}`}
+              className="h-8 w-8"
+            >
+              {getThemeIcon()}
+            </SidebarMenuButton>
+          </div>
+        </SidebarFooter>
         <SidebarRail />
       </Sidebar>
     </TooltipProvider>
