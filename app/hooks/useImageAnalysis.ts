@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core";
 import { generateText } from "ai";
+import { IMAGE_AUTO_PROMPT } from "@/app/constants/prompts";
 
 interface ImageAnalysisOptions {
   onProgress?: (status: string) => void;
@@ -29,7 +30,7 @@ export function useImageAnalysis() {
       onProgress,
       generateTitle = true,
       showToasts = true,
-      customPrompt = "Analyze the image(s) and write a short note about it. Only include relevant information. If the image is text-based, only return the text and nothing else."
+      customPrompt = IMAGE_AUTO_PROMPT
     } = options;
 
     setIsAnalyzing(true);

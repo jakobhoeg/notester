@@ -4,11 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { builtInAI, doesBrowserSupportBuiltInAI } from "@built-in-ai/core";
 import { generateText } from "ai";
+import { AUDIO_AUTO_PROMPT } from "@/app/constants/prompts";
 
 interface TranscriptionOptions {
   onProgress?: (status: string) => void;
   generateTitle?: boolean;
   showToasts?: boolean;
+  customPrompt?: string;
 }
 
 interface TranscriptionResult {
@@ -28,6 +30,7 @@ export function useTranscription() {
       onProgress,
       generateTitle = false,
       showToasts = false,
+      customPrompt,
     } = options;
 
     if (!audioBlob) {
@@ -75,9 +78,14 @@ export function useTranscription() {
 
       const audioData = new Uint8Array(await audioBlob.arrayBuffer());
 
+      // Use custom prompt if provided, otherwise use the default auto-prompt
+      const systemPrompt = customPrompt
+        ? `${customPrompt} If no audio is presented, just return an empty string.`
+        : `${AUDIO_AUTO_PROMPT} If no audio is presented, just return an empty string.`;
+
       const { text: transcription, usage } = await generateText({
         model: model,
-        system: 'Transcribe the following audio. Include EVERYTHING. If no audio is presented, just return an empty string.',
+        system: systemPrompt,
         messages: [
           {
             role: "user",
