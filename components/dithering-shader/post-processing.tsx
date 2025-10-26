@@ -42,7 +42,7 @@ export const PostProcessing = () => {
     grayscaleOnly
   } = useControls({
     'Dithering': folder({
-      ditheringGridSize: { value: 3.5, min: 0.5, max: 20, step: 0.5, label: 'Effect Resolution' },
+      ditheringGridSize: { value: 3, min: 0.5, max: 20, step: 0.5, label: 'Effect Resolution' },
       pixelSizeRatio: { value: 1, min: 1, max: 10, step: 1, label: 'Pixelation Strength' },
       grayscaleOnly: { value: true, label: 'Grayscale Only' }
     })
