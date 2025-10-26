@@ -57,9 +57,9 @@ export const PostProcessing = () => {
   } = useControls({
     'Bloom 2': folder({
       bloom2Enabled: { value: true, label: 'Enable Bloom 2 (Post-Dithering)' },
-      bloom2Threshold: { value: 0.0, min: 0, max: 2, step: 0.01, label: 'Threshold' },
-      bloom2Intensity: { value: 0.2, min: 0, max: 2, step: 0.01, label: 'Intensity' },
-      bloom2Radius: { value: 0.5, min: 0, max: 1, step: 0.01, label: 'Radius' },
+      bloom2Threshold: { value: 0.45, min: 0, max: 2, step: 0.01, label: 'Threshold' },
+      bloom2Intensity: { value: 0.58, min: 0, max: 2, step: 0.01, label: 'Intensity' },
+      bloom2Radius: { value: 0.6, min: 0, max: 1, step: 0.01, label: 'Radius' },
       bloom2Smoothing: { value: 0.22, min: 0, max: 1, step: 0.01, label: 'Smoothing' },
     })
   });

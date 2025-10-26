@@ -86,9 +86,9 @@ const Chrome3DText = memo(function Chrome3DText({ }: Chrome3DTextProps) {
       <Leva hidden={process.env.NODE_ENV === 'production'} />
       <View className="" style={{ width: '100%', height: '100%' }}>
         <Suspense fallback={null}>
-          <PerspectiveCamera makeDefault position={[0, -3, 17]} fov={65} />
-          <group position={[0, -0.5, 0]}>
-            <Float floatIntensity={2} rotationIntensity={0.2} speed={2}>
+          <PerspectiveCamera makeDefault position={[0, -4, 17]} fov={65} />
+          <group position={[0, -1.2, 0]}>
+            <Float floatIntensity={3.25} rotationIntensity={0.2} speed={1.5}>
               <Center scale={modelScale}>
                 <ChromeText />
               </Center>
