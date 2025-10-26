@@ -92,7 +92,7 @@ export function PromptSuggestions({
             ))}
           </div>
         ) : (
-          <div className="relative flex w-full items-start justify-start gap-2">
+          <div className="flex flex-row flex-wrap w-full items-start justify-start gap-2">
             {suggestionGroups.map((suggestion) => (
               <PromptSuggestion
                 key={suggestion.label}

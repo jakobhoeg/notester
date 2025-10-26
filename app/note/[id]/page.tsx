@@ -106,7 +106,7 @@ export default function NotePage() {
         switch (genData.generation_type) {
           case 'audio':
             hasStartedTranscription.current = true
-            startAudioTranscription(genData.data.audioBase64)
+            startAudioTranscription(genData.data.audioBase64, genData.data.customPrompt)
             break;
           case 'pdf':
             hasStartedPDFGeneration.current = true
@@ -256,7 +256,7 @@ export default function NotePage() {
   }
 
 
-  const startAudioTranscription = async (audioBase64: string) => {
+  const startAudioTranscription = async (audioBase64: string, customPrompt?: string) => {
     if (!note) return
 
     setIsTranscribing(true)
@@ -274,6 +274,7 @@ export default function NotePage() {
       // Transcribe the audio
       const result = await transcribeAudio(audioBlob, {
         generateTitle: true,
+        ...(customPrompt && { customPrompt }),
         showToasts: false,
         onProgress: (status) => {
           console.log(`Transcription progress: ${status}`)
