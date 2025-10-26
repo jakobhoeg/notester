@@ -500,7 +500,7 @@ export default function HomeComponent() {
               <TooltipProvider>
                 <Tooltip delayDuration={400}>
                   <TooltipTrigger asChild>
-                    <div className="rounded-lg border bg-muted/50 p-2 text-sm cursor-help transition-colors hover:bg-muted/70">
+                    <div className="rounded-lg border bg-muted/50 backdrop-blur-xl p-2 text-sm cursor-help transition-colors hover:bg-muted/70">
                       <div className="flex items-start gap-2">
                         <InfoIcon className="mt-0.5 size-4 flex-shrink-0 text-muted-foreground" />
                         <div className="flex-1 space-y-1">
