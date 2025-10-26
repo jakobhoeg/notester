@@ -62,9 +62,9 @@ const TailwindAdvancedEditor = ({ content, onUpdate, onEditorCreate }: TailwindA
   return (
     <div className="relative w-full overflow-visible">
       <div className="flex absolute right-0 top-0 z-10 mb-5 gap-2">
-        <div className="rounded-lg bg-secondary px-2 py-1 text-sm text-muted-foreground">{saveStatus}</div>
+        <div className="rounded-lg bg-secondary/20 px-2 py-1 text-sm text-muted-foreground">{saveStatus}</div>
         {charsCount > 0 && (
-          <div className="rounded-lg bg-secondary px-2 py-1 text-sm text-muted-foreground">
+          <div className="rounded-lg bg-secondary/20 px-2 py-1 text-sm text-muted-foreground">
             {charsCount} Words
           </div>
         )}

@@ -32,7 +32,7 @@
   --sidebar-foreground: #000000;
   --sidebar-primary: #F8BD32;
   --sidebar-primary-foreground: #18181A;
-  --sidebar-accent: #fffffd;
+  --sidebar-accent: #eeeeee;
   --sidebar-accent-foreground: #000000;
   --sidebar-border: #e1dfda;
   --sidebar-ring: #e2a919;
@@ -86,7 +86,7 @@
   --sidebar-foreground: #ffffff;
   --sidebar-primary: #dab200;
   --sidebar-primary-foreground: #000000;
-  --sidebar-accent: #040404;
+  --sidebar-accent: #292929;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #222223;
   --sidebar-ring: #ba9200;
