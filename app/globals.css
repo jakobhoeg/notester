@@ -53,7 +53,7 @@
   --shadow-offset-y: 2px;
   --shadow: [object Object];
   --loading-start: #f8f8f8;
-  --loading-mid: #7ec8ce;
+  --loading-mid: rgb(226, 207, 119);
   --loading-end: #f8f8f8;
 }
 
@@ -106,9 +106,9 @@
   --shadow-offset-x: 0px;
   --shadow-offset-y: 2px;
   --shadow: [object Object];
-  --loading-start: #1c1d1d;
-  --loading-mid: #2e90978c;
-  --loading-end: #1c1d1d;
+  --loading-start: #161616;
+  --loading-mid: #e6cc5b;
+  --loading-end: #161616;
 }
 
 @theme inline {
