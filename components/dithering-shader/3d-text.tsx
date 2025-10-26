@@ -27,8 +27,8 @@ const ChromeText = memo(function ChromeText(): JSX.Element {
   return (
     <Text3D
       font={FONT_URL}
-      size={0.95}
-      height={0.30}
+      size={0.56}
+      height={0.2}
       curveSegments={12}
       bevelEnabled
       bevelThickness={0.02}
