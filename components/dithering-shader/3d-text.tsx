@@ -1,6 +1,6 @@
 "use client"
 
-import { Center, Float, Text3D, PerspectiveCamera } from '@react-three/drei';
+import { Center, Float, Text3D, PerspectiveCamera, OrbitControls } from '@react-three/drei';
 import { Suspense, useEffect, useState, useCallback, FC, memo, JSX } from 'react';
 import { PostProcessing } from './post-processing';
 import { EnvironmentWrapper } from './environment';
@@ -94,6 +94,7 @@ const Chrome3DText = memo(function Chrome3DText({ }: Chrome3DTextProps) {
               </Center>
             </Float>
           </group>
+          <OrbitControls />
           <EnvironmentWrapper intensity={intensity} highlight={highlight} />
           <Effects />
         </Suspense>

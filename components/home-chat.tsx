@@ -528,7 +528,7 @@ export default function HomeComponent() {
               </TooltipProvider>
             )}
             {/* Unified Prompt Input with File Upload Options */}
-            <div className="w-full">
+            <div className="w-full relative z-10">
               <PromptInput
                 className=""
                 onSubmit={handleSubmit}

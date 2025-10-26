@@ -42,7 +42,7 @@ export const PostProcessing = () => {
     grayscaleOnly
   } = useControls({
     'Dithering': folder({
-      ditheringGridSize: { value: 4, min: 1, max: 20, step: 1, label: 'Effect Resolution' },
+      ditheringGridSize: { value: 3.5, min: 0.5, max: 20, step: 0.5, label: 'Effect Resolution' },
       pixelSizeRatio: { value: 1, min: 1, max: 10, step: 1, label: 'Pixelation Strength' },
       grayscaleOnly: { value: true, label: 'Grayscale Only' }
     })
@@ -56,10 +56,10 @@ export const PostProcessing = () => {
     bloom2Smoothing,
   } = useControls({
     'Bloom 2': folder({
-      bloom2Enabled: { value: false, label: 'Enable Bloom 2 (Post-Dithering)' },
+      bloom2Enabled: { value: true, label: 'Enable Bloom 2 (Post-Dithering)' },
       bloom2Threshold: { value: 0.0, min: 0, max: 2, step: 0.01, label: 'Threshold' },
-      bloom2Intensity: { value: 0.42, min: 0, max: 2, step: 0.01, label: 'Intensity' },
-      bloom2Radius: { value: 0.75, min: 0, max: 1, step: 0.01, label: 'Radius' },
+      bloom2Intensity: { value: 0.2, min: 0, max: 2, step: 0.01, label: 'Intensity' },
+      bloom2Radius: { value: 0.5, min: 0, max: 1, step: 0.01, label: 'Radius' },
       bloom2Smoothing: { value: 0.22, min: 0, max: 1, step: 0.01, label: 'Smoothing' },
     })
   });

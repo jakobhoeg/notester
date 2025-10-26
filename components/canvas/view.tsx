@@ -26,7 +26,13 @@ const View = forwardRef<HTMLDivElement, { children?: React.ReactNode; orbit?: bo
 
     return (
       <>
-        <div ref={localRef} {...props} />
+        <div
+          ref={localRef}
+          {...props}
+          style={{ ...(props.style as React.CSSProperties || {}), touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none' }}
+          onDragStart={(e) => e.preventDefault()}
+          onContextMenu={(e) => e.preventDefault()}
+        />
         <Three>
           {/* @ts-ignore */}
           <ViewImpl track={localRef}>
