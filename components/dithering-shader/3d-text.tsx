@@ -27,8 +27,8 @@ const ChromeText = memo(function ChromeText(): JSX.Element {
   return (
     <Text3D
       font={FONT_URL}
-      size={0.56}
-      height={0.2}
+      size={0.95}
+      height={0.30}
       curveSegments={12}
       bevelEnabled
       bevelThickness={0.02}
@@ -86,7 +86,7 @@ const Chrome3DText = memo(function Chrome3DText({ }: Chrome3DTextProps) {
       <Leva hidden={process.env.NODE_ENV === 'production'} />
       <View className="" style={{ width: '100%', height: '100%' }}>
         <Suspense fallback={null}>
-          <PerspectiveCamera makeDefault position={[0, -5, 17]} fov={65} />
+          <PerspectiveCamera makeDefault position={[0, -3, 17]} fov={65} />
           <group position={[0, -0.5, 0]}>
             <Float floatIntensity={2} rotationIntensity={0.2} speed={2}>
               <Center scale={modelScale}>
