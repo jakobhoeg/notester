@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+"use client"
+
+import { useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { EffectComposer, RenderPass, BloomEffect, EffectPass } from 'postprocessing';
 import { useControls, folder } from 'leva';
 import { DitheringEffect } from './DitheringEffect';
@@ -16,6 +18,8 @@ export const PostProcessing = () => {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const cameraRef = useRef<THREE.Camera | null>(null);
   const needsUpdate = useRef(true);
+  const isInitialized = useRef(false);
+  const { gl, scene, camera } = useThree();
 
   // Effect controls
   const {
@@ -63,15 +67,56 @@ export const PostProcessing = () => {
   // Memoized resize handler
   const handleResize = useCallback(() => {
     if (composerRef.current) {
-      composerRef.current.setSize(window.innerWidth, window.innerHeight);
+      try {
+        const size = gl.getSize(new THREE.Vector2());
+        composerRef.current.setSize(size.x, size.y);
+      } catch {
+        // Fallback to window size if renderer size is unavailable
+        composerRef.current.setSize(window.innerWidth, window.innerHeight);
+      }
     }
-  }, []);
+  }, [gl]);
 
   // Handle window resize
   useEffect(() => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [handleResize]);
+
+  // Initialize on mount and cleanup on unmount
+  useEffect(() => {
+    // Force composer recreation on mount by disposing any existing one
+    if (composerRef.current) {
+      try {
+        composerRef.current.removeAllPasses();
+        // @ts-ignore EffectComposer has dispose in postprocessing
+        composerRef.current.dispose?.();
+      } catch { }
+      composerRef.current = null;
+    }
+
+    // Reset initialization flag on mount
+    isInitialized.current = false;
+    needsUpdate.current = true;
+
+    return () => {
+      isInitialized.current = false;
+      if (composerRef.current) {
+        try {
+          composerRef.current.removeAllPasses();
+          // @ts-ignore EffectComposer has dispose in postprocessing
+          composerRef.current.dispose?.();
+        } catch { }
+        composerRef.current = null;
+      }
+      // Ensure the default framebuffer is cleared so no stale frame remains
+      try {
+        gl.setRenderTarget(null);
+        gl.setClearColor(0x000000, 0); // fully transparent
+        gl.clear(true, true, true);
+      } catch { }
+    };
+  }, [gl]);
 
   // Configure post-processing effects
   useEffect(() => {
@@ -92,11 +137,17 @@ export const PostProcessing = () => {
   ]);
 
   // Handle rendering
-  useFrame(({ gl, scene: currentScene, camera: currentCamera }) => {
+  useFrame((state) => {
+    const { gl, scene: currentScene, camera: currentCamera } = state;
+
     // Initialize composer if not yet created
     if (!composerRef.current) {
-      composerRef.current = new EffectComposer(gl);
+      composerRef.current = new EffectComposer(gl, {
+        multisampling: 0, // Disable MSAA for better performance
+      });
       handleResize(); // Initial sizing
+      isInitialized.current = false;
+      needsUpdate.current = true;
     }
 
     // Update scene and camera references if changed
@@ -109,8 +160,8 @@ export const PostProcessing = () => {
       needsUpdate.current = true;
     }
 
-    // Rebuild passes if needed
-    if (needsUpdate.current && sceneRef.current && cameraRef.current && composerRef.current) {
+    // Rebuild passes if needed or if not yet initialized
+    if ((needsUpdate.current || !isInitialized.current) && sceneRef.current && cameraRef.current && composerRef.current) {
       const composer = composerRef.current;
       const scene = sceneRef.current;
       const camera = cameraRef.current;
@@ -119,39 +170,55 @@ export const PostProcessing = () => {
 
       // Add required passes in order
       const renderPass = new RenderPass(scene, camera);
+      renderPass.renderToScreen = false;
       composer.addPass(renderPass);
 
       if (bloom1Enabled) {
-        composer.addPass(new EffectPass(camera, new BloomEffect({
+        const bloomPass = new EffectPass(camera, new BloomEffect({
           luminanceThreshold: bloom1Threshold,
           intensity: bloom1Intensity,
           radius: bloom1Radius,
           mipmapBlur: true,
-        })));
+        }));
+        bloomPass.renderToScreen = false;
+        composer.addPass(bloomPass);
       }
 
       // Dithering effect - always active
-      composer.addPass(new EffectPass(camera, new DitheringEffect({
+      const ditheringPass = new EffectPass(camera, new DitheringEffect({
         gridSize: ditheringGridSize,
         pixelSizeRatio,
         grayscaleOnly
-      })));
+      }));
 
       if (bloom2Enabled) {
-        composer.addPass(new EffectPass(camera, new BloomEffect({
+        ditheringPass.renderToScreen = false;
+        composer.addPass(ditheringPass);
+
+        const bloom2Pass = new EffectPass(camera, new BloomEffect({
           luminanceThreshold: bloom2Threshold,
           intensity: bloom2Intensity,
           luminanceSmoothing: bloom2Smoothing,
           radius: bloom2Radius,
-        })));
+        }));
+        bloom2Pass.renderToScreen = true; // Final pass renders to screen
+        composer.addPass(bloom2Pass);
+      } else {
+        ditheringPass.renderToScreen = true; // Final pass renders to screen
+        composer.addPass(ditheringPass);
       }
 
       needsUpdate.current = false;
+      isInitialized.current = true;
     }
 
-    // Render the composer if available
-    composerRef.current?.render();
-  }, 1);
+    // Render the composer only if properly initialized
+    if (composerRef.current && isInitialized.current) {
+      // Render composer as the final stage for this view
+      gl.autoClear = false;
+      composerRef.current.render();
+    }
+  }, 1000);
 
   return null;
 };

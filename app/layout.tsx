@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { SidebarProvider } from "@/components/providers/sidebar";
 import { LeftSidebar } from "@/components/sidebar";
 import { Toaster } from "@/components/ui/sonner"
+import R3FRoot from "@/components/providers/R3FRoot";
 
 const rubikSans = Rubik({
   variable: "--font-sans",
@@ -44,22 +45,24 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <PGliteWrapper>
-            <TanstackProvider>
-              <SidebarProvider
-                defaultOpen={defaultOpen}
-                className="grid h-dvh grid-rows-[auto_1fr]"
-              >
-                <div className="row-span-2 flex">
-                  <LeftSidebar />
-                  <main className="relative flex flex-1 overflow-auto">
-                    <div className="grid flex-1">{children}</div>
-                  </main>
-                </div>
-              </SidebarProvider>
-              <Toaster position="top-right" />
-            </TanstackProvider>
-          </PGliteWrapper>
+          <R3FRoot>
+            <PGliteWrapper>
+              <TanstackProvider>
+                <SidebarProvider
+                  defaultOpen={defaultOpen}
+                  className="grid h-dvh grid-rows-[auto_1fr]"
+                >
+                  <div className="row-span-2 flex">
+                    <LeftSidebar />
+                    <main className="relative flex flex-1 overflow-auto">
+                      <div className="grid flex-1">{children}</div>
+                    </main>
+                  </div>
+                </SidebarProvider>
+                <Toaster position="top-right" />
+              </TanstackProvider>
+            </PGliteWrapper>
+          </R3FRoot>
         </ThemeProvider>
       </body>
     </html>

@@ -1,11 +1,11 @@
 "use client"
 
-import { Canvas } from '@react-three/fiber';
-import { Center, Float, Text3D, useGLTF } from '@react-three/drei';
+import { Center, Float, Text3D, PerspectiveCamera } from '@react-three/drei';
 import { Suspense, useEffect, useState, useCallback, FC, memo, JSX } from 'react';
 import { PostProcessing } from './post-processing';
 import { EnvironmentWrapper } from './environment';
 import { useControls, folder, Leva } from 'leva';
+import { View } from '@/components/canvas/view';
 
 interface Chrome3DTextProps {
   text?: string;
@@ -18,12 +18,6 @@ interface Chrome3DTextProps {
 
 // Font URL constant to ensure consistency
 const FONT_URL = "https://threejs.org/examples/fonts/helvetiker_bold.typeface.json";
-
-// Preload the font to avoid blocking the main thread later
-// This happens once when the module is loaded
-if (typeof window !== 'undefined') {
-  useGLTF.preload(FONT_URL);
-}
 
 /**
  * 3D Chrome Text component
@@ -52,7 +46,7 @@ const ChromeText = memo(function ChromeText(): JSX.Element {
   )
 });
 
-export default function Chrome3DText({ }: Chrome3DTextProps) {
+const Chrome3DText = memo(function Chrome3DText({ }: Chrome3DTextProps) {
   const [modelScale, setModelScale] = useState(3);
 
   const { intensity, highlight } = useControls({
@@ -88,33 +82,27 @@ export default function Chrome3DText({ }: Chrome3DTextProps) {
   }, [handleResize]);
 
   return (
-    <div style={{ width: '85%' }}>
+    <div style={{ width: '100%', height: '100dvh' }}>
       <Leva hidden={process.env.NODE_ENV === 'production'} />
-      <Canvas
-        shadows
-        camera={{ position: [0, 0, 17], fov: 65 }}
-        gl={{ alpha: true }}
-      >
+      <View className="" style={{ width: '100%', height: '100%' }}>
         <Suspense fallback={null}>
+          <PerspectiveCamera makeDefault position={[0, 0, 17]} fov={65} />
           <group position={[0, -0.5, 0]}>
-            <Float
-              floatIntensity={2}
-              rotationIntensity={0.2}
-              speed={2}
-            >
-              <Center scale={modelScale} position={[0, 0, 0]} rotation={[0, 0, 0]}>
+            <Float floatIntensity={2} rotationIntensity={0.2} speed={2}>
+              <Center scale={modelScale}>
                 <ChromeText />
               </Center>
             </Float>
           </group>
-          {/* <OrbitControls /> */}
           <EnvironmentWrapper intensity={intensity} highlight={highlight} />
           <Effects />
         </Suspense>
-      </Canvas>
+      </View>
     </div>
   );
-}
+});
+
+export default Chrome3DText;
 
 /**
  * Post-processing effects wrapper component
