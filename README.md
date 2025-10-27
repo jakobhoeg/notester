@@ -4,8 +4,6 @@
 
 # Private AI-powered note-taking
 
-This is my submission to the [Google Chrome Built-in AI Challenge 2025](https://developer.chrome.com/blog/ai-challenge-2025).
-
 Notester is a fully private, client-side note-taking web application that leverages Chrome's Built-in AI APIs to provide powerful AI assistance without compromising your privacy. All your notes and AI processing stay on your device.
 
 ## Problem Statement
